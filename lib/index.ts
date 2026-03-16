@@ -18,5 +18,5 @@ export {
 } from './utils'
 
 export { createClient } from './supabase/client'
-export type { Database, Property, Booking, Profile, Room } from './database.types'
+export type { Database } from './database.types'
 export type { DashboardStats } from './supabase'
