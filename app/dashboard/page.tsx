@@ -735,7 +735,8 @@ export default function DashboardPage() {
     }
 
     fetchDashboardData()
-  }, [user, authLoading, router, supabase, addToast])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading])
 
   // Handle booking actions
   const handleAcceptBooking = async (bookingId: string) => {

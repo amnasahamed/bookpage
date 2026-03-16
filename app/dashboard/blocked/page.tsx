@@ -84,7 +84,8 @@ export default function BlockedDatesPage() {
       }
     }
     fetchData()
-  }, [user, supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   // Form state
   const [formData, setFormData] = useState({

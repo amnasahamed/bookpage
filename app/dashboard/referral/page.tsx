@@ -58,7 +58,8 @@ export default function ReferralPage() {
       setIsLoading(false)
     }
     fetchReferralData()
-  }, [user, supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   const referralLink = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/signup?ref=${referralCode}`
 
