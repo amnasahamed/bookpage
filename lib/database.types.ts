@@ -1,784 +1,515 @@
-/**
- * BookPage Database Types
- * Generated TypeScript types for Supabase database
- */
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
-// ============================================
-// ENUM TYPES
-// ============================================
-
-export type VerificationStatus = 'pending' | 'approved' | 'rejected';
-export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled';
-export type HoldStatus = 'active' | 'converted' | 'expired' | 'cancelled';
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
-export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'refunded';
-export type DocumentType = 'registration' | 'gstin' | 'utility_bill' | 'license' | 'other';
-export type ReferralStatus = 'pending' | 'completed' | 'expired';
-
-// ============================================
-// TABLE TYPES
-// ============================================
-
-export interface Profile {
-  id: string;
-  full_name: string | null;
-  phone: string | null;
-  avatar_url: string | null;
-  referral_code: string | null;
-  credits_earned: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ProfileInsert {
-  id: string;
-  full_name?: string | null;
-  phone?: string | null;
-  avatar_url?: string | null;
-  referral_code?: string | null;
-  credits_earned?: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface ProfileUpdate {
-  id?: string;
-  full_name?: string | null;
-  phone?: string | null;
-  avatar_url?: string | null;
-  referral_code?: string | null;
-  credits_earned?: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Property {
-  id: string;
-  owner_id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  location: string | null;
-  location_lat: number | null;
-  location_lng: number | null;
-  images: string[];
-  amenities: string[];
-  is_verified: boolean;
-  verification_status: VerificationStatus;
-  is_hibernating: boolean;
-  last_login_at: string;
-  hibernation_warning_sent: boolean;
-  subscription_status: SubscriptionStatus;
-  subscription_ends_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface PropertyInsert {
-  id?: string;
-  owner_id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  location?: string | null;
-  location_lat?: number | null;
-  location_lng?: number | null;
-  images?: string[];
-  amenities?: string[];
-  is_verified?: boolean;
-  verification_status?: VerificationStatus;
-  is_hibernating?: boolean;
-  last_login_at?: string;
-  hibernation_warning_sent?: boolean;
-  subscription_status?: SubscriptionStatus;
-  subscription_ends_at?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface PropertyUpdate {
-  id?: string;
-  owner_id?: string;
-  name?: string;
-  slug?: string;
-  description?: string | null;
-  location?: string | null;
-  location_lat?: number | null;
-  location_lng?: number | null;
-  images?: string[];
-  amenities?: string[];
-  is_verified?: boolean;
-  verification_status?: VerificationStatus;
-  is_hibernating?: boolean;
-  last_login_at?: string;
-  hibernation_warning_sent?: boolean;
-  subscription_status?: SubscriptionStatus;
-  subscription_ends_at?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface RoomType {
-  id: string;
-  property_id: string;
-  name: string;
-  description: string | null;
-  price_per_night: number;
-  max_guests: number;
-  num_beds: number;
-  bed_type: string;
-  images: string[];
-  amenities: string[];
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface RoomTypeInsert {
-  id?: string;
-  property_id: string;
-  name: string;
-  description?: string | null;
-  price_per_night: number;
-  max_guests: number;
-  num_beds?: number;
-  bed_type?: string;
-  images?: string[];
-  amenities?: string[];
-  is_active?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface RoomTypeUpdate {
-  id?: string;
-  property_id?: string;
-  name?: string;
-  description?: string | null;
-  price_per_night?: number;
-  max_guests?: number;
-  num_beds?: number;
-  bed_type?: string;
-  images?: string[];
-  amenities?: string[];
-  is_active?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Room {
-  id: string;
-  property_id: string;
-  room_type_id: string | null;
-  room_number: string;
-  floor_number: number;
-  is_active: boolean;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface RoomInsert {
-  id?: string;
-  property_id: string;
-  room_type_id?: string | null;
-  room_number: string;
-  floor_number?: number;
-  is_active?: boolean;
-  notes?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface RoomUpdate {
-  id?: string;
-  property_id?: string;
-  room_type_id?: string | null;
-  room_number?: string;
-  floor_number?: number;
-  is_active?: boolean;
-  notes?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface BlockedDate {
-  id: string;
-  room_id: string;
-  start_date: string;
-  end_date: string;
-  reason: string | null;
-  created_by: string | null;
-  created_at: string;
-}
-
-export interface BlockedDateInsert {
-  id?: string;
-  room_id: string;
-  start_date: string;
-  end_date: string;
-  reason?: string | null;
-  created_by?: string | null;
-  created_at?: string;
-}
-
-export interface BlockedDateUpdate {
-  id?: string;
-  room_id?: string;
-  start_date?: string;
-  end_date?: string;
-  reason?: string | null;
-  created_by?: string | null;
-  created_at?: string;
-}
-
-export interface Hold {
-  id: string;
-  property_id: string;
-  room_type_id: string;
-  room_id: string | null;
-  hold_code: string;
-  check_in: string;
-  check_out: string;
-  guest_name: string;
-  guest_phone: string;
-  guest_email: string | null;
-  num_guests: number;
-  status: HoldStatus;
-  expires_at: string;
-  converted_booking_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface HoldInsert {
-  id?: string;
-  property_id: string;
-  room_type_id: string;
-  room_id?: string | null;
-  hold_code?: string;
-  check_in: string;
-  check_out: string;
-  guest_name: string;
-  guest_phone: string;
-  guest_email?: string | null;
-  num_guests?: number;
-  status?: HoldStatus;
-  expires_at?: string;
-  converted_booking_id?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface HoldUpdate {
-  id?: string;
-  property_id?: string;
-  room_type_id?: string;
-  room_id?: string | null;
-  hold_code?: string;
-  check_in?: string;
-  check_out?: string;
-  guest_name?: string;
-  guest_phone?: string;
-  guest_email?: string | null;
-  num_guests?: number;
-  status?: HoldStatus;
-  expires_at?: string;
-  converted_booking_id?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Booking {
-  id: string;
-  property_id: string;
-  room_id: string | null;
-  hold_id: string | null;
-  guest_name: string;
-  guest_phone: string;
-  guest_email: string | null;
-  num_guests: number;
-  check_in: string;
-  check_out: string;
-  total_amount: number;
-  status: BookingStatus;
-  payment_status: PaymentStatus;
-  notes: string | null;
-  cancellation_reason: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface BookingInsert {
-  id?: string;
-  property_id: string;
-  room_id?: string | null;
-  hold_id?: string | null;
-  guest_name: string;
-  guest_phone: string;
-  guest_email?: string | null;
-  num_guests?: number;
-  check_in: string;
-  check_out: string;
-  total_amount: number;
-  status?: BookingStatus;
-  payment_status?: PaymentStatus;
-  notes?: string | null;
-  cancellation_reason?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface BookingUpdate {
-  id?: string;
-  property_id?: string;
-  room_id?: string | null;
-  hold_id?: string | null;
-  guest_name?: string;
-  guest_phone?: string;
-  guest_email?: string | null;
-  num_guests?: number;
-  check_in?: string;
-  check_out?: string;
-  total_amount?: number;
-  status?: BookingStatus;
-  payment_status?: PaymentStatus;
-  notes?: string | null;
-  cancellation_reason?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface VerificationDocument {
-  id: string;
-  property_id: string;
-  document_type: DocumentType;
-  document_url: string;
-  document_number: string | null;
-  status: VerificationStatus;
-  rejection_reason: string | null;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  uploaded_at: string;
-}
-
-export interface VerificationDocumentInsert {
-  id?: string;
-  property_id: string;
-  document_type: DocumentType;
-  document_url: string;
-  document_number?: string | null;
-  status?: VerificationStatus;
-  rejection_reason?: string | null;
-  reviewed_by?: string | null;
-  reviewed_at?: string | null;
-  uploaded_at?: string;
-}
-
-export interface VerificationDocumentUpdate {
-  id?: string;
-  property_id?: string;
-  document_type?: DocumentType;
-  document_url?: string;
-  document_number?: string | null;
-  status?: VerificationStatus;
-  rejection_reason?: string | null;
-  reviewed_by?: string | null;
-  reviewed_at?: string | null;
-  uploaded_at?: string;
-}
-
-export interface Referral {
-  id: string;
-  referrer_id: string;
-  referred_id: string | null;
-  referral_code_used: string;
-  status: ReferralStatus;
-  credits_awarded: number;
-  created_at: string;
-  completed_at: string | null;
-}
-
-export interface ReferralInsert {
-  id?: string;
-  referrer_id: string;
-  referred_id?: string | null;
-  referral_code_used: string;
-  status?: ReferralStatus;
-  credits_awarded?: number;
-  created_at?: string;
-  completed_at?: string | null;
-}
-
-export interface ReferralUpdate {
-  id?: string;
-  referrer_id?: string;
-  referred_id?: string | null;
-  referral_code_used?: string;
-  status?: ReferralStatus;
-  credits_awarded?: number;
-  created_at?: string;
-  completed_at?: string | null;
-}
-
-export interface PageView {
-  id: string;
-  property_id: string;
-  viewed_at: string;
-  ip_hash: string | null;
-  user_agent: string | null;
-  referrer: string | null;
-}
-
-export interface PageViewInsert {
-  id?: string;
-  property_id: string;
-  viewed_at?: string;
-  ip_hash?: string | null;
-  user_agent?: string | null;
-  referrer?: string | null;
-}
-
-export interface SubscriptionPayment {
-  id: string;
-  property_id: string;
-  amount: number;
-  currency: string;
-  payment_method: string | null;
-  transaction_id: string | null;
-  status: PaymentStatus;
-  paid_at: string | null;
-  created_at: string;
-}
-
-export interface SubscriptionPaymentInsert {
-  id?: string;
-  property_id: string;
-  amount: number;
-  currency?: string;
-  payment_method?: string | null;
-  transaction_id?: string | null;
-  status?: PaymentStatus;
-  paid_at?: string | null;
-  created_at?: string;
-}
-
-export interface AuditLog {
-  id: string;
-  table_name: string;
-  record_id: string;
-  action: 'INSERT' | 'UPDATE' | 'DELETE';
-  old_data: Record<string, unknown> | null;
-  new_data: Record<string, unknown> | null;
-  performed_by: string | null;
-  performed_at: string;
-}
-
-// ============================================
-// COMPOSITE TYPES (for function returns)
-// ============================================
-
-export interface AvailableRoom {
-  room_id: string;
-  room_number: string;
-  room_type_id: string;
-  room_type_name: string;
-  price_per_night: number;
-  max_guests: number;
-}
-
-export interface PropertyStats {
-  total_bookings: number;
-  total_bookings_this_month: number;
-  active_holds: number;
-  total_page_views: number;
-  total_page_views_this_month: number;
-  total_revenue: number;
-  total_revenue_this_month: number;
-}
-
-export interface UpcomingBooking {
-  booking_id: string;
-  guest_name: string;
-  guest_phone: string;
-  room_name: string;
-  check_in: string;
-  check_out: string;
-  num_guests: number;
-  status: BookingStatus;
-  total_amount: number;
-}
-
-export interface SearchPropertyResult {
-  property_id: string;
-  property_name: string;
-  slug: string;
-  location: string;
-  is_verified: boolean;
-  min_price: number;
-  max_price: number;
-}
-
-// ============================================
-// DATABASE SCHEMA TYPE
-// ============================================
-
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.4"
+  }
   public: {
     Tables: {
-      profiles: {
-        Row: Profile;
-        Insert: ProfileInsert;
-        Update: ProfileUpdate;
-      };
-      properties: {
-        Row: Property;
-        Insert: PropertyInsert;
-        Update: PropertyUpdate;
-      };
-      room_types: {
-        Row: RoomType;
-        Insert: RoomTypeInsert;
-        Update: RoomTypeUpdate;
-      };
-      rooms: {
-        Row: Room;
-        Insert: RoomInsert;
-        Update: RoomUpdate;
-      };
       blocked_dates: {
-        Row: BlockedDate;
-        Insert: BlockedDateInsert;
-        Update: BlockedDateUpdate;
-      };
-      holds: {
-        Row: Hold;
-        Insert: HoldInsert;
-        Update: HoldUpdate;
-      };
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          property_id: string
+          reason: string | null
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          property_id: string
+          reason?: string | null
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          property_id?: string
+          reason?: string | null
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_dates_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
-        Row: Booking;
-        Insert: BookingInsert;
-        Update: BookingUpdate;
-      };
-      verification_documents: {
-        Row: VerificationDocument;
-        Insert: VerificationDocumentInsert;
-        Update: VerificationDocumentUpdate;
-      };
+        Row: {
+          check_in: string
+          check_out: string
+          created_at: string
+          guest_email: string | null
+          guest_name: string
+          guest_phone: string | null
+          hold_code: string | null
+          hold_expires_at: string | null
+          id: string
+          notes: string | null
+          num_guests: number
+          property_id: string
+          room_id: string | null
+          status: string
+          total_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          check_in: string
+          check_out: string
+          created_at?: string
+          guest_email?: string | null
+          guest_name: string
+          guest_phone?: string | null
+          hold_code?: string | null
+          hold_expires_at?: string | null
+          id?: string
+          notes?: string | null
+          num_guests?: number
+          property_id: string
+          room_id?: string | null
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          check_in?: string
+          check_out?: string
+          created_at?: string
+          guest_email?: string | null
+          guest_name?: string
+          guest_phone?: string | null
+          hold_code?: string | null
+          hold_expires_at?: string | null
+          id?: string
+          notes?: string | null
+          num_guests?: number
+          property_id?: string
+          room_id?: string | null
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendars: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          property_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          property_id: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          property_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendars_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          credits_earned: number
+          email: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          referral_code: string | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          credits_earned?: number
+          email: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          referral_code?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          credits_earned?: number
+          email?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          referral_code?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          amenities: string[] | null
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          images: string[] | null
+          instagram: string | null
+          is_hibernating: boolean
+          is_verified: boolean
+          location: string
+          location_lat: number | null
+          location_lng: number | null
+          map_link: string | null
+          name: string
+          owner_id: string
+          price_per_night: number
+          slug: string
+          subscription_ends_at: string | null
+          subscription_status: string
+          updated_at: string
+          verification_status: string
+          videos: string[] | null
+          whatsapp_number: string
+        }
+        Insert: {
+          amenities?: string[] | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          instagram?: string | null
+          is_hibernating?: boolean
+          is_verified?: boolean
+          location: string
+          location_lat?: number | null
+          location_lng?: number | null
+          map_link?: string | null
+          name: string
+          owner_id: string
+          price_per_night: number
+          slug: string
+          subscription_ends_at?: string | null
+          subscription_status?: string
+          updated_at?: string
+          verification_status?: string
+          videos?: string[] | null
+          whatsapp_number: string
+        }
+        Update: {
+          amenities?: string[] | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          instagram?: string | null
+          is_hibernating?: boolean
+          is_verified?: boolean
+          location?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          map_link?: string | null
+          name?: string
+          owner_id?: string
+          price_per_night?: number
+          slug?: string
+          subscription_ends_at?: string | null
+          subscription_status?: string
+          updated_at?: string
+          verification_status?: string
+          videos?: string[] | null
+          whatsapp_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_admin_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referrals: {
-        Row: Referral;
-        Insert: ReferralInsert;
-        Update: ReferralUpdate;
-      };
-      page_views: {
-        Row: PageView;
-        Insert: PageViewInsert;
-      };
-      subscription_payments: {
-        Row: SubscriptionPayment;
-        Insert: SubscriptionPaymentInsert;
-      };
-      audit_logs: {
-        Row: AuditLog;
-      };
-    };
+        Row: {
+          created_at: string
+          credits_earned: number
+          id: string
+          referral_code: string
+          referred_id: string | null
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          credits_earned?: number
+          id?: string
+          referral_code: string
+          referred_id?: string | null
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          credits_earned?: number
+          id?: string
+          referral_code?: string
+          referred_id?: string | null
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max_guests: number
+          name: string
+          num_beds: number
+          price_per_night: number
+          property_id: string
+          room_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_guests?: number
+          name: string
+          num_beds?: number
+          price_per_night?: number
+          property_id: string
+          room_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_guests?: number
+          name?: string
+          num_beds?: number
+          price_per_night?: number
+          property_id?: string
+          room_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
-      generate_hold_code: {
-        Returns: string;
-      };
-      generate_referral_code: {
-        Args: { user_name: string };
-        Returns: string;
-      };
-      expire_holds: {
-        Returns: { expired_count: number }[];
-      };
-      check_hibernation: {
-        Returns: { hibernated_count: number; warned_count: number }[];
-      };
-      get_available_rooms: {
-        Args: { 
-          p_property_id: string; 
-          p_check_in: string; 
-          p_check_out: string; 
-          p_room_type_id?: string 
-        };
-        Returns: AvailableRoom[];
-      };
-      is_room_available: {
-        Args: { 
-          p_room_id: string; 
-          p_check_in: string; 
-          p_check_out: string 
-        };
-        Returns: boolean;
-      };
-      convert_hold_to_booking: {
-        Args: { 
-          p_hold_id: string; 
-          p_room_id?: string 
-        };
-        Returns: string; // booking_id
-      };
-      get_property_stats: {
-        Args: { p_property_id: string };
-        Returns: PropertyStats[];
-      };
-      complete_referral: {
-        Args: { p_referral_id: string };
-        Returns: boolean;
-      };
-      record_page_view: {
-        Args: { 
-          p_property_id: string; 
-          p_ip_hash?: string; 
-          p_user_agent?: string; 
-          p_referrer?: string 
-        };
-        Returns: void;
-      };
-      update_last_login: {
-        Args: { p_property_id: string };
-        Returns: void;
-      };
-      get_upcoming_bookings: {
-        Args: { 
-          p_property_id: string; 
-          p_limit?: number 
-        };
-        Returns: UpcomingBooking[];
-      };
-      search_properties: {
-        Args: { 
-          p_query: string; 
-          p_location?: string; 
-          p_verified_only?: boolean 
-        };
-        Returns: SearchPropertyResult[];
-      };
-    };
-  };
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
 
-// ============================================
-// UTILITY TYPES
-// ============================================
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-export type Tables = Database['public']['Tables'];
-export type TableName = keyof Tables;
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
-export type TableRow<T extends TableName> = Tables[T]['Row'];
-export type TableInsert<T extends TableName> = Tables[T] extends { Insert: infer I } ? I : never;
-export type TableUpdate<T extends TableName> = Tables[T] extends { Update: infer U } ? U : never;
-
-// Helper type for selecting specific columns
-export type SelectColumns<T extends TableName, K extends keyof TableRow<T>> = 
-  Pick<TableRow<T>, K>;
-
-// Helper type for relations
-export interface PropertyWithRooms extends Property {
-  rooms: Room[];
-  room_types: RoomType[];
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
 
-export interface PropertyWithDetails extends Property {
-  owner: Profile;
-  room_types: RoomType[];
-  rooms: Room[];
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
-export interface BookingWithDetails extends Booking {
-  property: Property;
-  room: Room | null;
-  hold: Hold | null;
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
 
-export interface HoldWithDetails extends Hold {
-  property: Property;
-  room_type: RoomType;
-  room: Room | null;
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
 
-// ============================================
-// API RESPONSE TYPES
-// ============================================
-
-export interface ApiResponse<T> {
-  data: T | null;
-  error: Error | null;
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
 }
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  count: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
-
-// ============================================
-// FORM INPUT TYPES
-// ============================================
-
-export interface BookingFormData {
-  property_id: string;
-  room_type_id: string;
-  room_id?: string;
-  guest_name: string;
-  guest_phone: string;
-  guest_email?: string;
-  num_guests: number;
-  check_in: string;
-  check_out: string;
-  notes?: string;
-}
-
-export interface HoldFormData {
-  property_id: string;
-  room_type_id: string;
-  room_id?: string;
-  guest_name: string;
-  guest_phone: string;
-  guest_email?: string;
-  num_guests: number;
-  check_in: string;
-  check_out: string;
-}
-
-export interface PropertyFormData {
-  name: string;
-  slug: string;
-  description?: string;
-  location?: string;
-  location_lat?: number;
-  location_lng?: number;
-  images?: string[];
-  amenities?: string[];
-}
-
-export interface RoomTypeFormData {
-  property_id: string;
-  name: string;
-  description?: string;
-  price_per_night: number;
-  max_guests: number;
-  num_beds?: number;
-  bed_type?: string;
-  images?: string[];
-  amenities?: string[];
-}
-
-export interface BlockedDateFormData {
-  room_id: string;
-  start_date: string;
-  end_date: string;
-  reason?: string;
-}
-
-export interface VerificationDocumentFormData {
-  property_id: string;
-  document_type: DocumentType;
-  document_url: string;
-  document_number?: string;
-}
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
+A new version of Supabase CLI is available: v2.78.1 (currently installed v2.75.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
