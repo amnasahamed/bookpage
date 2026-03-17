@@ -106,7 +106,7 @@ export default function ReferralPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardSidebar propertyName="Moonlight Villa" verificationStatus="approved" />
+      <DashboardSidebar />
 
       <main className="lg:ml-[260px] min-h-screen">
         <div className="p-6 lg:p-8">
@@ -303,7 +303,7 @@ export default function ReferralPage() {
                       {referralList.map((owner) => (
                         <tr key={owner.id} className="border-b border-gray-100 last:border-0">
                           <td className="py-4 px-4">
-                            <span className="font-medium text-gray-900">{owner.name || owner.referred_user_name || owner.id}</span>
+                            <span className="font-medium text-gray-900">{owner.referred_id || owner.id}</span>
                           </td>
                           <td className="py-4 px-4 text-gray-600">
                             {formatDate(owner.signupDate || owner.created_at)}
@@ -331,7 +331,7 @@ export default function ReferralPage() {
                               'font-medium',
                               owner.status === 'awarded' ? 'text-success-green-600' : 'text-gray-400'
                             )}>
-                              ₹{owner.creditAmount || owner.credit_amount || 666}
+                              ₹{owner.credits_earned || 666}
                             </span>
                           </td>
                         </tr>

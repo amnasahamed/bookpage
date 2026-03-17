@@ -44,13 +44,7 @@ interface BlockedDate {
   property_id?: string
 }
 
-const rooms = [
-  { id: 'all', name: 'All Rooms' },
-  { id: '101', name: 'Room 101 - Deluxe Suite' },
-  { id: '102', name: 'Room 102 - Deluxe Suite' },
-  { id: '201', name: 'Room 201 - Standard Room' },
-  { id: '202', name: 'Room 202 - Standard Room' },
-]
+interface RoomOption { id: string; name: string }
 
 export default function BlockedDatesPage() {
   const { user } = useAuth()
@@ -58,6 +52,7 @@ export default function BlockedDatesPage() {
   const supabase = createClient()
   const [propertyId, setPropertyId] = useState<string | null>(null)
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([])
+  const [roomOptions, setRoomOptions] = useState<RoomOption[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [dateToDelete, setDateToDelete] = useState<BlockedDate | null>(null)
@@ -75,12 +70,12 @@ export default function BlockedDatesPage() {
 
       if (property) {
         setPropertyId(property.id)
-        const { data: blocked } = await supabase
-          .from('blocked_dates')
-          .select('*')
-          .eq('property_id', property.id)
-          .order('start_date')
+        const [{ data: blocked }, { data: roomsData }] = await Promise.all([
+          supabase.from('blocked_dates').select('*').eq('property_id', property.id).order('start_date'),
+          supabase.from('rooms').select('id, name').eq('property_id', property.id).eq('is_active', true),
+        ])
         if (blocked) setBlockedDates(blocked as BlockedDate[])
+        if (roomsData) setRoomOptions(roomsData as RoomOption[])
       }
     }
     fetchData()
@@ -216,15 +211,14 @@ export default function BlockedDatesPage() {
 
   const getRoomName = (roomId?: string) => {
     if (!roomId || roomId === 'all') return 'All Rooms'
-    const room = rooms.find(r => r.id === roomId)
-    return room?.name || roomId
+    return roomOptions.find(r => r.id === roomId)?.name || 'Unknown Room'
   }
 
-  const filteredBlockedDates = blockedDates
+const filteredBlockedDates = selectedRoom === 'all' ? blockedDates : blockedDates.filter(b => (b as any).room_id === selectedRoom)
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardSidebar propertyName="Moonlight Villa" verificationStatus="approved" />
+      <DashboardSidebar />
       
       <main className="lg:ml-[260px] min-h-screen">
         <div className="p-6 lg:p-8">
@@ -266,7 +260,8 @@ export default function BlockedDatesPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {rooms.map(room => (
+                <SelectItem value="all">All Rooms</SelectItem>
+                {roomOptions.map(room => (
                   <SelectItem key={room.id} value={room.id}>
                     {room.name}
                   </SelectItem>
@@ -359,7 +354,8 @@ export default function BlockedDatesPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {rooms.map(room => (
+                  <SelectItem value="all">All Rooms</SelectItem>
+                  {roomOptions.map(room => (
                     <SelectItem key={room.id} value={room.id}>
                       {room.name}
                     </SelectItem>

@@ -98,13 +98,12 @@ export default function SettingsPage() {
     const fetchData = async () => {
       const [{ data: profileData }, { data: propertyData }] = await Promise.all([
         supabase.from('profiles').select('full_name, phone').eq('id', user.id).single(),
-        supabase.from('properties').select('id, slug, name, description, amenities, location, is_hibernating').eq('owner_id', user.id).single(),
+        supabase.from('properties').select('id, slug, name, description, amenities, location, is_hibernating, whatsapp_number').eq('owner_id', user.id).single(),
       ])
       if (profileData) {
         setProfile(prev => ({
           ...prev,
           fullName: profileData.full_name ?? prev.fullName,
-          phone: profileData.phone ?? prev.phone,
           email: user.email ?? prev.email,
         }))
       } else {
@@ -120,7 +119,32 @@ export default function SettingsPage() {
           amenities: propertyData.amenities ?? prev.amenities,
           location: propertyData.location ?? prev.location,
         }))
+        // Load whatsapp_number into profile.phone for display
+        setProfile(prev => ({ ...prev, phone: propertyData.whatsapp_number ?? '' }))
         setIsHibernating(propertyData.is_hibernating ?? false)
+      } else {
+        // Property wasn't created yet (e.g. email callback missed) — create it now
+        const meta = user.user_metadata as { property_name?: string; property_slug?: string }
+        const propertyName = meta?.property_name || 'My Property'
+        const rawSlug = meta?.property_slug || user.email?.split('@')[0]?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'my-property'
+        // Make slug unique by appending user id suffix if needed
+        const slug = rawSlug + '-' + user.id.slice(0, 6)
+        const { data: created, error: createErr } = await supabase.from('properties').insert({
+          owner_id: user.id,
+          name: propertyName,
+          slug,
+          location: '',
+          price_per_night: 0,
+          whatsapp_number: '',
+          subscription_status: 'trial',
+          is_verified: false,
+          verification_status: 'pending',
+          is_hibernating: false,
+        }).select('id, name, slug').single()
+        if (created) {
+          setPropertyId(created.id)
+          setProperty(prev => ({ ...prev, name: created.name ?? prev.name, slug: created.slug ?? prev.slug }))
+        }
       }
     }
     fetchData()
@@ -129,13 +153,15 @@ export default function SettingsPage() {
   const handleProfileSave = async () => {
     if (!user) return
     setSaving(true)
-    const { error } = await supabase
-      .from('profiles')
-      .update({ full_name: profile.fullName, phone: profile.phone })
-      .eq('id', user.id)
+    const [profileRes, propertyRes] = await Promise.all([
+      supabase.from('profiles').update({ full_name: profile.fullName }).eq('id', user.id),
+      propertyId
+        ? supabase.from('properties').update({ whatsapp_number: profile.phone }).eq('id', propertyId)
+        : Promise.resolve({ error: null }),
+    ])
     setSaving(false)
-    if (error) {
-      addToast({ title: 'Failed to save profile', description: error.message, variant: 'destructive' })
+    if (profileRes.error || propertyRes.error) {
+      addToast({ title: 'Failed to save profile', description: profileRes.error?.message || propertyRes.error?.message, variant: 'destructive' })
     } else {
       addToast({ title: 'Profile saved', variant: 'success' })
     }
