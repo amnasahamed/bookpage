@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/app/providers'
 
 const navLinks = [
   { label: 'Features', href: '#features' },
@@ -16,6 +17,7 @@ const navLinks = [
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { user, isLoading } = useAuth()
 
   useEffect(() => {
     let rafId: number
@@ -66,12 +68,25 @@ export function Navbar() {
 
           {/* Desktop CTA Buttons */}
           <div className="hidden md:flex items-center gap-4">
-            <Button variant="ghost" className="hover:bg-trust-blue-50 font-semibold text-gray-700" asChild>
-              <Link href="/login">Log in</Link>
-            </Button>
-            <Button className="font-semibold shadow-md btn-hover rounded-full px-6" asChild>
-              <Link href="/signup">Get Started</Link>
-            </Button>
+            {!isLoading && (
+              user ? (
+                <Button className="font-semibold shadow-md btn-hover rounded-full px-6 gap-2" asChild>
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button variant="ghost" className="hover:bg-trust-blue-50 font-semibold text-gray-700" asChild>
+                    <Link href="/login">Log in</Link>
+                  </Button>
+                  <Button className="font-semibold shadow-md btn-hover rounded-full px-6" asChild>
+                    <Link href="/signup">Get Started</Link>
+                  </Button>
+                </>
+              )
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -113,12 +128,25 @@ export function Navbar() {
             </Link>
           ))}
           <div className="pt-6 flex flex-col gap-3">
-            <Button variant="outline" className="w-full rounded-xl py-6 font-bold" asChild>
-              <Link href="/login">Log in</Link>
-            </Button>
-            <Button className="w-full rounded-xl py-6 font-bold shadow-lg" asChild>
-              <Link href="/signup">Get Started</Link>
-            </Button>
+            {!isLoading && (
+              user ? (
+                <Button className="w-full rounded-xl py-6 font-bold shadow-lg gap-2" asChild>
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Go to Dashboard
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" className="w-full rounded-xl py-6 font-bold" asChild>
+                    <Link href="/login">Log in</Link>
+                  </Button>
+                  <Button className="w-full rounded-xl py-6 font-bold shadow-lg" asChild>
+                    <Link href="/signup">Get Started</Link>
+                  </Button>
+                </>
+              )
+            )}
           </div>
         </div>
       </div>

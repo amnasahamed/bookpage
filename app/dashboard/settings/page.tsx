@@ -66,11 +66,11 @@ export default function SettingsPage() {
 
   // Property state
   const [property, setProperty] = useState({
-    name: 'Moonlight Villa',
-    slug: 'moonlight-villa',
-    description: 'A beautiful beachfront villa with stunning ocean views. Perfect for families and groups looking for a peaceful getaway.',
-    location: 'Goa, India',
-    amenities: ['WiFi', 'Pool', 'Parking', 'AC', 'Kitchen'],
+    name: '',
+    slug: '',
+    description: '',
+    location: '',
+    amenities: [] as string[],
   })
 
   // Subscription state
@@ -98,7 +98,7 @@ export default function SettingsPage() {
     const fetchData = async () => {
       const [{ data: profileData }, { data: propertyData }] = await Promise.all([
         supabase.from('profiles').select('full_name, phone').eq('id', user.id).single(),
-        supabase.from('properties').select('id, slug, name, description, amenities').eq('owner_id', user.id).single(),
+        supabase.from('properties').select('id, slug, name, description, amenities, location, is_hibernating').eq('owner_id', user.id).single(),
       ])
       if (profileData) {
         setProfile(prev => ({
@@ -118,7 +118,9 @@ export default function SettingsPage() {
           slug: propertyData.slug ?? prev.slug,
           description: propertyData.description ?? prev.description,
           amenities: propertyData.amenities ?? prev.amenities,
+          location: propertyData.location ?? prev.location,
         }))
+        setIsHibernating(propertyData.is_hibernating ?? false)
       }
     }
     fetchData()
@@ -144,7 +146,7 @@ export default function SettingsPage() {
     setSavingProperty(true)
     const { error } = await supabase
       .from('properties')
-      .update({ name: property.name, description: property.description, amenities: property.amenities })
+      .update({ name: property.name, description: property.description, amenities: property.amenities, location: property.location })
       .eq('id', propertyId)
     setSavingProperty(false)
     if (error) {
@@ -185,7 +187,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardSidebar propertyName="Moonlight Villa" verificationStatus="approved" />
+      <DashboardSidebar propertyName={property.name || undefined} />
       
       <main className="lg:ml-[260px] min-h-screen">
         <div className="p-6 lg:p-8">
@@ -309,7 +311,20 @@ export default function SettingsPage() {
                     </div>
                     <Switch
                       checked={isHibernating}
-                      onCheckedChange={setIsHibernating}
+                      onCheckedChange={async (checked) => {
+                        setIsHibernating(checked)
+                        if (!propertyId) return
+                        const { error } = await supabase
+                          .from('properties')
+                          .update({ is_hibernating: checked })
+                          .eq('id', propertyId)
+                        if (error) {
+                          addToast({ title: 'Failed to update hibernation', variant: 'destructive' })
+                          setIsHibernating(!checked)
+                        } else {
+                          addToast({ title: checked ? 'Hibernation enabled' : 'Hibernation disabled', variant: 'success' })
+                        }
+                      }}
                     />
                   </div>
                   <p className="text-sm text-gray-500">
@@ -341,7 +356,7 @@ export default function SettingsPage() {
                     <Label htmlFor="slug">Page URL (Slug)</Label>
                     <div className="flex gap-2 mt-2">
                       <div className="flex-1 flex items-center px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-600">
-                        <span className="text-gray-400">bookpage.com/</span>
+                        <span className="text-gray-400 text-xs truncate">{typeof window !== 'undefined' ? window.location.host : 'bookpage.com'}/</span>
                         <input
                           id="slug"
                           value={property.slug}

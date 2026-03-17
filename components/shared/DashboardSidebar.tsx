@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -25,6 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { useAuth } from '@/app/providers'
 import { getInitials } from '@/lib/utils'
+import { createClient } from '@/lib/supabase'
 
 
 const navItems = [
@@ -45,15 +46,33 @@ interface DashboardSidebarProps {
 }
 
 export function DashboardSidebar({
-  propertyName,
-  verificationStatus,
+  propertyName: propertyNameProp,
+  verificationStatus: verificationStatusProp,
   pendingBookingsCount = 0,
 }: DashboardSidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
+  const [propertyName, setPropertyName] = useState(propertyNameProp)
+  const [verificationStatus, setVerificationStatus] = useState(verificationStatusProp)
   const pathname = usePathname()
   const router = useRouter()
   const { user, signOut } = useAuth()
+  const supabase = createClient()
+
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('properties')
+      .select('name, verification_status')
+      .eq('owner_id', user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setPropertyName(data.name)
+          setVerificationStatus(data.verification_status as any)
+        }
+      })
+  }, [user])
 
   const handleSignOut = async () => {
     await signOut()
