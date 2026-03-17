@@ -68,6 +68,7 @@ export default function RoomsPage() {
       setIsFetching(false)
     }
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const [formData, setFormData] = useState({
@@ -115,7 +116,11 @@ export default function RoomsPage() {
   }
 
   const handleSave = async () => {
-    if (!validateForm() || !propertyId) return
+    if (!validateForm()) return
+    if (!propertyId) {
+      addToast({ title: 'Property not found', description: 'Please refresh the page and try again', variant: 'destructive' })
+      return
+    }
     setIsLoading(true)
 
     const payload = {
@@ -128,8 +133,11 @@ export default function RoomsPage() {
 
     if (editingRoom) {
       const { error } = await supabase.from('rooms').update(payload).eq('id', editingRoom.id)
+      setIsLoading(false)
       if (!error) {
         setRooms(prev => prev.map(r => r.id === editingRoom.id ? { ...r, ...payload } : r))
+        setIsModalOpen(false)
+        resetForm()
         addToast({ title: 'Room updated', variant: 'success' })
       } else {
         addToast({ title: 'Failed to update room', description: error.message, variant: 'destructive' })
@@ -140,17 +148,16 @@ export default function RoomsPage() {
         .insert({ ...payload, property_id: propertyId, is_active: true })
         .select('id, name, description, price_per_night, max_guests, num_beds, is_active')
         .single()
+      setIsLoading(false)
       if (!error && newRoom) {
         setRooms(prev => [...prev, newRoom as Room])
+        setIsModalOpen(false)
+        resetForm()
         addToast({ title: 'Room added', variant: 'success' })
-      } else if (error) {
-        addToast({ title: 'Failed to add room', description: error.message, variant: 'destructive' })
+      } else {
+        addToast({ title: 'Failed to add room', description: error?.message ?? 'Unknown error', variant: 'destructive' })
       }
     }
-
-    setIsLoading(false)
-    setIsModalOpen(false)
-    resetForm()
   }
 
   const confirmDelete = async () => {
