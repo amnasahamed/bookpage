@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   Bed,
@@ -52,7 +52,13 @@ export function DashboardSidebar({
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { user, signOut } = useAuth()
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push('/login')
+  }
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -231,7 +237,7 @@ export function DashboardSidebar({
             <Button variant="outline" onClick={() => setShowSignOutConfirm(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={signOut}>
+            <Button variant="destructive" onClick={handleSignOut}>
               Sign Out
             </Button>
           </DialogFooter>

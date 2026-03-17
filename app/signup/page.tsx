@@ -109,6 +109,7 @@ export default function SignupPage() {
   const router = useRouter()
   const { addToast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [slugEdited, setSlugEdited] = useState(false)
@@ -179,28 +180,32 @@ export default function SignupPage() {
       }
 
       if (authData.user) {
-        // Create the property record
-        const { error: propertyError } = await supabase.from('properties').insert({
-          owner_id: authData.user.id,
-          name: data.property_name,
-          slug: data.property_slug,
-          subscription_status: 'trial',
-          is_verified: false,
-          verification_status: 'pending',
-          is_hibernating: false,
-        })
+        if (authData.session) {
+          // Email confirmation is disabled — session exists, create property immediately
+          const { error: propertyError } = await supabase.from('properties').insert({
+            owner_id: authData.user.id,
+            name: data.property_name,
+            slug: data.property_slug,
+            subscription_status: 'trial',
+            is_verified: false,
+            verification_status: 'pending',
+            is_hibernating: false,
+          })
 
-        if (propertyError) {
-          console.error('Error creating property:', propertyError)
+          if (propertyError) {
+            console.error('Error creating property:', propertyError)
+          }
+
+          addToast({
+            title: 'Account created!',
+            description: 'Your 14-day free trial has started. Welcome to BookPage!',
+            variant: 'success',
+          })
+          router.push('/dashboard')
+        } else {
+          // Email confirmation is enabled — property will be created after verification
+          setEmailSent(true)
         }
-
-        addToast({
-          title: 'Account created!',
-          description: 'Your 14-day free trial has started. Welcome to BookPage!',
-          variant: 'success',
-        })
-        router.push('/dashboard')
-        router.refresh()
       }
     } catch (error: any) {
       addToast({
@@ -211,6 +216,25 @@ export default function SignupPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-3xl shadow-xl p-10 max-w-md w-full text-center border border-gray-100">
+          <div className="w-20 h-20 bg-trust-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Mail className="h-10 w-10 text-trust-blue-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Check your email</h1>
+          <p className="text-gray-600 mb-6 leading-relaxed">
+            We&apos;ve sent a confirmation link to your email. Click it to verify your account and your booking page will be set up automatically.
+          </p>
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/login">Back to Login</Link>
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (

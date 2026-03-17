@@ -36,7 +36,7 @@ import {
   ArrowRight,
   Star,
 } from 'lucide-react'
-import { cn, formatCurrency, formatDateRange, calculateNights, generateHoldCode, doDateRangesOverlap } from '@/lib/utils'
+import { cn, formatCurrency, formatDateRange, calculateNights, doDateRangesOverlap } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -85,12 +85,6 @@ interface Property {
   room_types: RoomType[]
 }
 
-interface Hold {
-  id: string
-  hold_code: string
-  expires_at: string
-  status: string
-}
 
 type AvailabilityStatus = 'checking' | 'available' | 'unavailable' | 'on_hold' | 'blocked' | 'booked' | 'unknown' | null
 
@@ -212,11 +206,7 @@ export default function PropertyPage() {
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false)
   
   // Guest form state
-  const [guestName, setGuestName] = useState('')
-  const [guestPhone, setGuestPhone] = useState('+91')
-  const [guestEmail, setGuestEmail] = useState('')
-  const [isCreatingHold, setIsCreatingHold] = useState(false)
-  const [createdHold, setCreatedHold] = useState<Hold | null>(null)
+  const [numGuests, setNumGuests] = useState(1)
   
   // Gallery state
   const [galleryOpen, setGalleryOpen] = useState(false)
@@ -317,30 +307,6 @@ export default function PropertyPage() {
     setAvailabilityStatus(isBlocked ? 'unavailable' : 'available')
   }
 
-  // Create hold
-  const createHold = useCallback(async () => {
-    if (!guestName || !guestPhone || !guestEmail) return
-    
-    setIsCreatingHold(true)
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const newHold: Hold = {
-        id: 'hold-' + Date.now(),
-        hold_code: generateHoldCode(),
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-        status: 'active',
-      }
-      
-      setCreatedHold(newHold)
-    } catch (err) {
-      console.error('Error creating hold:', err)
-    } finally {
-      setIsCreatingHold(false)
-    }
-  }, [guestName, guestPhone, guestEmail])
 
   // Share property
   const handleShare = useCallback(async () => {
@@ -354,20 +320,26 @@ export default function PropertyPage() {
     }
   }, [])
 
-  // Open WhatsApp
+  // Open WhatsApp with prefilled booking message
   const openWhatsApp = useCallback(() => {
-    if (!property?.owner_phone || !createdHold) return
-    
+    if (!property?.owner_phone) return
+
     const roomType = property.room_types.find(rt => rt.id === selectedRoomType)
-    const dates = formatDateRange(checkInDate, checkOutDate)
-    
-    const message = `Hi, I want to book ${roomType?.name || 'a room'} for ${dates}. My Hold Code is #BP-${createdHold.hold_code}. Is this available?`
-    const encodedMessage = encodeURIComponent(message)
-    const whatsappNumber = (property.owner_phone || '').replace(/[^\d+]/g, '').replace(/^\+/, '')
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`
-    
-    window.open(whatsappUrl, '_blank')
-  }, [property, createdHold, selectedRoomType, checkInDate, checkOutDate])
+    const nightCount = calculateNights(checkInDate, checkOutDate)
+    const total = roomType ? nightCount * roomType.price_per_night : 0
+
+    const lines = [
+      `Hi! I'd like to book *${property.name}*`,
+      roomType ? `Room: ${roomType.name}` : '',
+      checkInDate && checkOutDate ? `Dates: ${formatDateRange(checkInDate, checkOutDate)} (${nightCount} night${nightCount !== 1 ? 's' : ''})` : '',
+      numGuests ? `Guests: ${numGuests}` : '',
+      total > 0 ? `Total: ${formatCurrency(total)}` : '',
+      `\nIs this available?`,
+    ].filter(Boolean).join('\n')
+
+    const whatsappNumber = property.owner_phone.replace(/[^\d]/g, '')
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(lines)}`, '_blank')
+  }, [property, selectedRoomType, checkInDate, checkOutDate, numGuests])
 
   // Gallery navigation
   const nextImage = useCallback(() => {
@@ -809,94 +781,34 @@ export default function PropertyPage() {
                   </div>
                 )}
 
-                {/* Guest Form (when available) */}
-                {availabilityStatus === 'available' && !createdHold && (
-                  <div className="mt-4 pt-4 border-t border-gray-200 animate-fade-in-up">
-                    <div className="bg-trust-blue-50 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-trust-blue-800 flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        10-Minute Hold: Secure your dates while you decide
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-sm text-gray-700">Full Name</Label>
-                        <Input
-                          value={guestName}
-                          onChange={(e) => setGuestName(e.target.value)}
-                          placeholder="Your name"
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label className="text-sm text-gray-700">Phone Number</Label>
-                        <Input
-                          value={guestPhone}
-                          onChange={(e) => setGuestPhone(e.target.value)}
-                          placeholder="+91 XXXXX XXXXX"
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label className="text-sm text-gray-700">Email</Label>
-                        <Input
-                          type="email"
-                          value={guestEmail}
-                          onChange={(e) => setGuestEmail(e.target.value)}
-                          placeholder="you@example.com"
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <Button
-                        onClick={createHold}
-                        disabled={!guestName || !guestPhone || !guestEmail || isCreatingHold}
-                        className="w-full"
-                      >
-                        {isCreatingHold ? (
-                          <>
-                            <Clock className="h-4 w-4 mr-2 animate-spin" />
-                            Creating Hold...
-                          </>
-                        ) : (
-                          'Hold These Dates'
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                {/* Number of Guests */}
+                <div className="mt-4">
+                  <Label htmlFor="num-guests" className="text-sm font-medium text-gray-700 mb-2 block">
+                    Guests
+                  </Label>
+                  <Input
+                    id="num-guests"
+                    type="number"
+                    min={1}
+                    max={selectedRoom?.max_guests || property.max_guests}
+                    value={numGuests}
+                    onChange={(e) => setNumGuests(Number(e.target.value))}
+                  />
+                </div>
 
-                {/* Hold Created - WhatsApp CTA */}
-                {createdHold && (
+                {/* Book on WhatsApp (shown when available) */}
+                {availabilityStatus === 'available' && property.owner_phone && (
                   <div className="mt-4 pt-4 border-t border-gray-200 animate-fade-in-up">
-                    <div className="bg-success-green-50 border border-success-green-200 rounded-lg p-4 mb-4">
-                      <p className="text-sm text-success-green-800 mb-2">
-                        Your dates are held!
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-success-green-700">Hold Code:</span>
-                        <span className="font-mono font-bold text-success-green-800 animate-pulse">
-                          #BP-{createdHold.hold_code}
-                        </span>
-                      </div>
-                      <p className="text-xs text-success-green-600 mt-1">
-                        Expires in 10 minutes
-                      </p>
-                    </div>
-                    
                     <Button
                       onClick={openWhatsApp}
-                      className="w-full bg-green-600 hover:bg-green-700"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      size="lg"
                     >
                       <MessageCircle className="h-5 w-5 mr-2" />
                       Book on WhatsApp
                     </Button>
-                    
                     <p className="text-xs text-gray-500 mt-2 text-center">
-                      We&apos;ll send your hold code and details to the owner
+                      Opens WhatsApp with your booking details pre-filled
                     </p>
                   </div>
                 )}
@@ -920,8 +832,8 @@ export default function PropertyPage() {
                 )}
               </div>
 
-              {/* Direct WhatsApp Button (always visible) */}
-              {!createdHold && property.owner_phone && (
+              {/* Direct WhatsApp Button (always visible, before availability is checked) */}
+              {availabilityStatus !== 'available' && property.owner_phone && (
                 <a
                   href={`https://wa.me/${(property.owner_phone || '').replace(/[^\d+]/g, '').replace(/^\+/, '')}`}
                   target="_blank"

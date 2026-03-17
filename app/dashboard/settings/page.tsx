@@ -58,9 +58,9 @@ export default function SettingsPage() {
 
   // Profile state
   const [profile, setProfile] = useState({
-    fullName: 'Priya Sharma',
-    email: 'priya@example.com',
-    phone: '+91 98765 43210',
+    fullName: '',
+    email: '',
+    phone: '',
     avatar: '',
   })
 
@@ -95,24 +95,33 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!user) return
-    const fetchProperty = async () => {
-      const { data } = await supabase
-        .from('properties')
-        .select('id, slug, name, description, amenities')
-        .eq('owner_id', user.id)
-        .single()
-      if (data) {
-        setPropertyId(data.id)
+    const fetchData = async () => {
+      const [{ data: profileData }, { data: propertyData }] = await Promise.all([
+        supabase.from('profiles').select('full_name, phone').eq('id', user.id).single(),
+        supabase.from('properties').select('id, slug, name, description, amenities').eq('owner_id', user.id).single(),
+      ])
+      if (profileData) {
+        setProfile(prev => ({
+          ...prev,
+          fullName: profileData.full_name ?? prev.fullName,
+          phone: profileData.phone ?? prev.phone,
+          email: user.email ?? prev.email,
+        }))
+      } else {
+        setProfile(prev => ({ ...prev, email: user.email ?? '' }))
+      }
+      if (propertyData) {
+        setPropertyId(propertyData.id)
         setProperty(prev => ({
           ...prev,
-          name: data.name ?? prev.name,
-          slug: data.slug ?? prev.slug,
-          description: data.description ?? prev.description,
-          amenities: data.amenities ?? prev.amenities,
+          name: propertyData.name ?? prev.name,
+          slug: propertyData.slug ?? prev.slug,
+          description: propertyData.description ?? prev.description,
+          amenities: propertyData.amenities ?? prev.amenities,
         }))
       }
     }
-    fetchProperty()
+    fetchData()
   }, [user])
 
   const handleProfileSave = async () => {
@@ -258,13 +267,17 @@ export default function SettingsPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone">WhatsApp Phone Number</Label>
                     <Input
                       id="phone"
                       value={profile.phone}
                       onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                      placeholder="+919876543210"
                       className="mt-2"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Include country code (e.g. +91). Guests will send booking requests to this number via WhatsApp.
+                    </p>
                   </div>
 
                   <div className="flex justify-end">
