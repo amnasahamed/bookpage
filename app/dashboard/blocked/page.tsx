@@ -5,27 +5,19 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useAuth, useToast } from '@/app/providers'
-import { 
-  Calendar, 
-  Plus, 
-  Trash2, 
-  Clock,
+import {
+  Calendar,
+  Plus,
+  Trash2,
   AlertCircle,
   Ban
 } from 'lucide-react'
 import { DashboardSidebar } from '@/components/shared/DashboardSidebar'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -40,11 +32,9 @@ interface BlockedDate {
   id: string
   start_date: string
   end_date: string
-  reason?: string
-  property_id?: string
+  reason?: string | null
+  property_id: string
 }
-
-interface RoomOption { id: string; name: string }
 
 export default function BlockedDatesPage() {
   const { user } = useAuth()
@@ -52,12 +42,10 @@ export default function BlockedDatesPage() {
   const supabase = createClient()
   const [propertyId, setPropertyId] = useState<string | null>(null)
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([])
-  const [roomOptions, setRoomOptions] = useState<RoomOption[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [dateToDelete, setDateToDelete] = useState<BlockedDate | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedRoom, setSelectedRoom] = useState('all')
 
   useEffect(() => {
     if (!user) return
@@ -70,35 +58,24 @@ export default function BlockedDatesPage() {
 
       if (property) {
         setPropertyId(property.id)
-        const [{ data: blocked }, { data: roomsData }] = await Promise.all([
-          supabase.from('blocked_dates').select('*').eq('property_id', property.id).order('start_date'),
-          supabase.from('rooms').select('id, name').eq('property_id', property.id).eq('is_active', true),
-        ])
+        const { data: blocked } = await supabase
+          .from('blocked_dates')
+          .select('*')
+          .eq('property_id', property.id)
+          .order('start_date')
         if (blocked) setBlockedDates(blocked as BlockedDate[])
-        if (roomsData) setRoomOptions(roomsData as RoomOption[])
       }
     }
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
-  // Form state
-  const [formData, setFormData] = useState({
-    startDate: '',
-    endDate: '',
-    reason: '',
-    roomId: 'all',
-  })
+  const [formData, setFormData] = useState({ startDate: '', endDate: '', reason: '' })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [bulkInput, setBulkInput] = useState('')
 
   const resetForm = () => {
-    setFormData({
-      startDate: '',
-      endDate: '',
-      reason: '',
-      roomId: 'all',
-    })
+    setFormData({ startDate: '', endDate: '', reason: '' })
     setFormErrors({})
     setBulkInput('')
   }
@@ -108,13 +85,10 @@ export default function BlockedDatesPage() {
     if (!formData.startDate) errors.startDate = 'Start date is required'
     if (!formData.endDate) errors.endDate = 'End date is required'
     if (formData.startDate && formData.endDate) {
-      const start = new Date(formData.startDate)
-      const end = new Date(formData.endDate)
-      if (end < start) {
+      if (new Date(formData.endDate) < new Date(formData.startDate)) {
         errors.endDate = 'End date must be after start date'
       }
     }
-    
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -129,7 +103,7 @@ export default function BlockedDatesPage() {
         property_id: propertyId,
         start_date: formData.startDate,
         end_date: formData.endDate,
-        reason: formData.reason,
+        reason: formData.reason || null,
       })
       .select()
       .single()
@@ -148,14 +122,14 @@ export default function BlockedDatesPage() {
     if (!propertyId || !bulkInput.trim()) return
 
     const lines = bulkInput.trim().split('\n').filter(line => line.trim())
-    const newEntries: { property_id: string; start_date: string; end_date: string; reason: string }[] = []
+    const newEntries: { property_id: string; start_date: string; end_date: string; reason: string | null }[] = []
 
     for (const line of lines) {
       const parts = line.split(',').map(s => s.trim())
       if (parts.length >= 2) {
         const [startDate, endDate, reason = ''] = parts
         if (startDate && endDate) {
-          newEntries.push({ property_id: propertyId, start_date: startDate, end_date: endDate, reason })
+          newEntries.push({ property_id: propertyId, start_date: startDate, end_date: endDate, reason: reason || null })
         }
       }
     }
@@ -175,11 +149,6 @@ export default function BlockedDatesPage() {
     }
   }
 
-  const handleDelete = (blockedDate: BlockedDate) => {
-    setDateToDelete(blockedDate)
-    setIsDeleteDialogOpen(true)
-  }
-
   const confirmDelete = async () => {
     if (!dateToDelete) return
     const { error } = await supabase.from('blocked_dates').delete().eq('id', dateToDelete.id)
@@ -193,40 +162,23 @@ export default function BlockedDatesPage() {
     setDateToDelete(null)
   }
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-IN', { 
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric' 
-    })
-  }
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 
-  const getDaysCount = (startDate: string, endDate: string) => {
-    const start = new Date(startDate)
-    const end = new Date(endDate)
-    const diff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
-    return diff
-  }
-
-  const getRoomName = (roomId?: string) => {
-    if (!roomId || roomId === 'all') return 'All Rooms'
-    return roomOptions.find(r => r.id === roomId)?.name || 'Unknown Room'
-  }
-
-const filteredBlockedDates = selectedRoom === 'all' ? blockedDates : blockedDates.filter(b => (b as any).room_id === selectedRoom)
+  const getDaysCount = (startDate: string, endDate: string) =>
+    Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
 
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardSidebar />
-      
+
       <main className="lg:ml-[260px] min-h-screen">
         <div className="p-6 lg:p-8">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Blocked Dates</h1>
-              <p className="text-gray-500 mt-1">Block dates when rooms are unavailable</p>
+              <p className="text-gray-500 mt-1">Block dates when your property is unavailable</p>
             </div>
             <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
@@ -239,39 +191,16 @@ const filteredBlockedDates = selectedRoom === 'all' ? blockedDates : blockedDate
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-trust-blue-600 shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-sm font-medium text-trust-blue-900">
-                  How blocking works
-                </h4>
+                <h4 className="text-sm font-medium text-trust-blue-900">How blocking works</h4>
                 <p className="text-sm text-trust-blue-700 mt-1">
-                  Guests won&apos;t be able to request bookings for blocked dates. 
-                  You can block specific rooms or all rooms at once.
+                  Guests won&apos;t be able to request bookings for blocked dates.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Room Filter */}
-          <div className="mb-6">
-            <Label htmlFor="roomFilter" className="text-sm font-medium text-gray-700">
-              Filter by Room
-            </Label>
-            <Select value={selectedRoom} onValueChange={setSelectedRoom}>
-              <SelectTrigger className="w-full sm:w-64 mt-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Rooms</SelectItem>
-                {roomOptions.map(room => (
-                  <SelectItem key={room.id} value={room.id}>
-                    {room.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Blocked Dates List */}
-          {filteredBlockedDates.length === 0 ? (
+          {blockedDates.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-300">
               <Ban className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No blocked dates</h3>
@@ -283,8 +212,8 @@ const filteredBlockedDates = selectedRoom === 'all' ? blockedDates : blockedDate
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredBlockedDates.map((blocked, index) => (
-                <Card 
+              {blockedDates.map((blocked, index) => (
+                <Card
                   key={blocked.id}
                   className="overflow-hidden"
                   style={{ animationDelay: `${index * 75}ms` }}
@@ -318,7 +247,7 @@ const filteredBlockedDates = selectedRoom === 'all' ? blockedDates : blockedDate
                         </div>
                       </div>
                       <button
-                        onClick={() => handleDelete(blocked)}
+                        onClick={() => { setDateToDelete(blocked); setIsDeleteDialogOpen(true) }}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors self-start sm:self-center"
                         aria-label="Delete blocked date"
                       >
@@ -339,31 +268,11 @@ const filteredBlockedDates = selectedRoom === 'all' ? blockedDates : blockedDate
           <DialogHeader>
             <DialogTitle>Block Date Range</DialogTitle>
             <DialogDescription>
-              Select the dates and rooms to block
+              Select the dates to block
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="room">Room</Label>
-              <Select 
-                value={formData.roomId} 
-                onValueChange={(value) => setFormData({ ...formData, roomId: value })}
-              >
-                <SelectTrigger className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Rooms</SelectItem>
-                  {roomOptions.map(room => (
-                    <SelectItem key={room.id} value={room.id}>
-                      {room.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="startDate">Start Date</Label>
@@ -412,22 +321,22 @@ const filteredBlockedDates = selectedRoom === 'all' ? blockedDates : blockedDate
                 id="bulk"
                 value={bulkInput}
                 onChange={(e) => setBulkInput(e.target.value)}
-                placeholder="Paste multiple ranges (e.g., March 15-18, March 22-25)"
+                placeholder="One range per line: YYYY-MM-DD, YYYY-MM-DD, Optional reason"
                 className="w-full mt-2 px-4 py-3 rounded-lg border border-gray-300 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-trust-blue-500 focus:ring-2 focus:ring-trust-blue-100 transition-all duration-200 resize-none"
                 rows={3}
               />
               <p className="text-xs text-gray-500 mt-1">
-                For bulk entry, paste dates in any format and we&apos;ll parse them
+                Format: YYYY-MM-DD, YYYY-MM-DD, Optional reason
               </p>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+            <Button variant="outline" onClick={() => { setIsModalOpen(false); resetForm() }}>
               Cancel
             </Button>
-            <Button 
-              onClick={bulkInput ? handleBulkAdd : handleSave} 
+            <Button
+              onClick={bulkInput ? handleBulkAdd : handleSave}
               disabled={isLoading}
             >
               {isLoading ? 'Blocking...' : 'Block Dates'}
@@ -449,8 +358,8 @@ const filteredBlockedDates = selectedRoom === 'all' ? blockedDates : blockedDate
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={confirmDelete} disabled={isLoading}>
-              {isLoading ? 'Unblocking...' : 'Unblock'}
+            <Button variant="destructive" onClick={confirmDelete}>
+              Unblock
             </Button>
           </DialogFooter>
         </DialogContent>

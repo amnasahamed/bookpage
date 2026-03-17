@@ -104,9 +104,7 @@ export default function VerificationPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <DashboardSidebar propertyName="Moonlight Villa" verificationStatus={
-        status === 'verified' ? 'approved' : status === 'under_review' ? 'pending' : null
-      } />
+      <DashboardSidebar />
       
       <main className="lg:ml-[260px] min-h-screen">
         <div className="p-6 lg:p-8">

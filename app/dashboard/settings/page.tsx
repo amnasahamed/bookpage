@@ -81,13 +81,17 @@ export default function SettingsPage() {
     status: 'active',
   })
 
-  // Notifications state
-  const [notifications, setNotifications] = useState({
-    emailAlerts: true,
-    whatsappNotifications: true,
-    bookingConfirmations: true,
-    marketingEmails: false,
+  // Notifications state (persisted in localStorage)
+  const [notifications, setNotifications] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('bp_notifications')
+        if (saved) return JSON.parse(saved)
+      } catch {}
+    }
+    return { emailAlerts: true, whatsappNotifications: true, bookingConfirmations: true, marketingEmails: false }
   })
+  const [savingNotifications, setSavingNotifications] = useState(false)
 
   // Hibernation state
   const [isHibernating, setIsHibernating] = useState(false)
@@ -197,6 +201,17 @@ export default function SettingsPage() {
     await new Promise(resolve => setTimeout(resolve, 1000))
     setIsLoading(false)
     setIsDeleteDialogOpen(false)
+  }
+
+  const handleNotificationsSave = async () => {
+    setSavingNotifications(true)
+    try {
+      localStorage.setItem('bp_notifications', JSON.stringify(notifications))
+      addToast({ title: 'Notification preferences saved', variant: 'success' })
+    } catch {
+      addToast({ title: 'Failed to save preferences', variant: 'destructive' })
+    }
+    setSavingNotifications(false)
   }
 
   const copySlug = async () => {
@@ -555,10 +570,16 @@ export default function SettingsPage() {
                     </div>
                     <Switch
                       checked={notifications.marketingEmails}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setNotifications({ ...notifications, marketingEmails: checked })
                       }
                     />
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <Button type="button" onClick={handleNotificationsSave} disabled={savingNotifications}>
+                      {savingNotifications ? 'Saving...' : 'Save Preferences'}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

@@ -59,16 +59,19 @@ export function DashboardSidebar({
   const { user, signOut } = useAuth()
   const supabase = createClient()
 
+  const [propertySlug, setPropertySlug] = useState<string | null>(null)
+
   useEffect(() => {
     if (!user) return
     supabase
       .from('properties')
-      .select('name, verification_status')
+      .select('name, slug, verification_status')
       .eq('owner_id', user.id)
       .single()
       .then(({ data }) => {
         if (data) {
           setPropertyName(data.name)
+          setPropertySlug(data.slug)
           setVerificationStatus(data.verification_status as any)
         }
       })
@@ -181,7 +184,7 @@ export function DashboardSidebar({
           {/* View Public Pages */}
           <div className="mt-6 pt-6 border-t border-gray-100 px-3 space-y-1">
             <Link
-              href={`/${propertyName?.toLowerCase().replace(/\s+/g, '-') || '#'}`}
+              href={propertySlug ? `/${propertySlug}` : '#'}
               target="_blank"
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
             >
