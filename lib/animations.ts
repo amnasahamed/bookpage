@@ -3,9 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
 // Hook for scroll-triggered animations
-export function useScrollAnimation<T extends HTMLElement>(
-  options: IntersectionObserverInit = { threshold: 0.2, rootMargin: '0px 0px -50px 0px' }
-) {
+export function useScrollAnimation<T extends HTMLElement>() {
   const ref = useRef<T>(null)
   const [isVisible, setIsVisible] = useState(false)
 
@@ -22,7 +20,7 @@ export function useScrollAnimation<T extends HTMLElement>(
           }
         })
       },
-      options
+      { threshold: 0.2, rootMargin: '0px 0px -50px 0px' }
     )
 
     observer.observe(element)
@@ -30,7 +28,8 @@ export function useScrollAnimation<T extends HTMLElement>(
     return () => {
       observer.disconnect()
     }
-  }, [options])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return { ref, isVisible }
 }
@@ -85,20 +84,21 @@ export function useCountUp(
   const [isAnimating, setIsAnimating] = useState(false)
 
   const startAnimation = useCallback(() => {
-    if (isAnimating || end === start) return
-    
-    setIsAnimating(true)
+    setIsAnimating((prev) => {
+      if (prev) return prev
+      return true
+    })
     let startTime: number | null = null
     let animationFrame: number
 
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp
       const progress = Math.min((timestamp - startTime) / duration, 1)
-      
+
       // Ease out cubic
       const easeOut = 1 - Math.pow(1 - progress, 3)
       const currentCount = Math.floor(easeOut * (end - start) + start)
-      
+
       setCount(currentCount)
 
       if (progress < 1) {
@@ -113,7 +113,7 @@ export function useCountUp(
     return () => {
       cancelAnimationFrame(animationFrame)
     }
-  }, [end, duration, start, isAnimating])
+  }, [end, duration, start])
 
   return { count, startAnimation, isAnimating }
 }
