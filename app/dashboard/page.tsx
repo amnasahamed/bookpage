@@ -2,974 +2,832 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  CalendarCheck,
-  Clock,
-  Eye,
-  ShieldCheck,
-  Bell,
-  Plus,
-  Ban,
-  Share2,
-  Check,
-  X,
-  Moon,
-  CalendarX,
-  Bed,
-  ArrowRight,
-  TrendingUp,
-  TrendingDown,
-  Copy,
-  CheckCircle2,
-  ArrowUpRight,
-} from 'lucide-react'
-import { DashboardSidebar } from '@/components/shared/DashboardSidebar'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Spinner } from '@/components/ui/spinner'
-import { useAuth, useToast } from '@/app/providers'
 import { createClient } from '@/lib/supabase'
-import { cn, formatDateRange } from '@/lib/utils'
-import type { Booking, Property, DashboardStats } from '@/lib/supabase'
-import { useCountUp, useScrollAnimation } from '@/lib/animations'
+import { useAuth } from '@/app/providers'
+import {
+  Camera,
+  Calendar,
+  MessageCircle,
+  IndianRupee,
+  Link as LinkIcon,
+  Upload,
+  X,
+  Check,
+  Clock,
+  Trash2,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  LogOut,
+  GripVertical,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
-// Animated counter component
-function AnimatedCounter({ value, duration = 1500 }: { value: number; duration?: number }) {
-  const { count, startAnimation } = useCountUp(value, duration)
-  const { ref, isVisible } = useScrollAnimation<HTMLSpanElement>()
-
-  useEffect(() => {
-    if (isVisible) {
-      startAnimation()
-    }
-  }, [isVisible, startAnimation])
-
-  return <span ref={ref}>{count.toLocaleString()}</span>
+interface PropertyImage {
+  id: string
+  url: string
+  caption?: string
+  sort_order: number
 }
 
-// Stats Card Component
-interface StatsCardProps {
-  title: string
-  value: number
-  icon: React.ElementType
-  trend?: { value: number; label: string; positive?: boolean }
-  note?: string
-  status?: 'verified' | 'pending' | 'unverified'
-  link?: string
-  delay?: number
-  isVisible: boolean
-  color?: 'blue' | 'green' | 'amber' | 'purple'
+interface Availability {
+  date: string
+  status: 'available' | 'on_hold' | 'booked'
 }
 
-function StatsCard({
-  title,
-  value,
-  icon: Icon,
-  trend,
-  note,
-  status,
-  link,
-  delay = 0,
-  isVisible,
-  color = 'blue',
-}: StatsCardProps) {
-  const colorStyles = {
-    blue: {
-      bg: 'bg-trust-blue-50',
-      icon: 'text-trust-blue-600',
-      border: 'border-trust-blue-100',
-    },
-    green: {
-      bg: 'bg-success-green-50',
-      icon: 'text-success-green-600',
-      border: 'border-success-green-100',
-    },
-    amber: {
-      bg: 'bg-warning-amber-50',
-      icon: 'text-warning-amber-600',
-      border: 'border-warning-amber-100',
-    },
-    purple: {
-      bg: 'bg-purple-50',
-      icon: 'text-purple-600',
-      border: 'border-purple-100',
-    },
-  }
-
-  const styles = colorStyles[color]
-
-  const statusConfig = {
-    verified: { bg: 'bg-success-green-50', text: 'text-success-green-600', label: 'Verified' },
-    pending: { bg: 'bg-warning-amber-100', text: 'text-warning-amber-600', label: 'Pending' },
-    unverified: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Unverified' },
-  }
-
-  const statusStyle = status ? statusConfig[status] : null
-
-  return (
-    <Card
-      hover
-      className={cn(
-        'transition-all duration-500 border-0 shadow-lg shadow-gray-200/50',
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      )}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-gray-900">
-                {status ? (
-                  <span className={statusStyle?.text}>{statusStyle?.label}</span>
-                ) : (
-                  <AnimatedCounter value={value} />
-                )}
-              </span>
-            </div>
-
-            {trend && (
-              <div className="flex items-center gap-1.5 mt-2">
-                {trend.positive ? (
-                  <TrendingUp className="h-4 w-4 text-success-green-600" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-red-500" />
-                )}
-                <span
-                  className={cn(
-                    'text-xs font-semibold',
-                    trend.positive ? 'text-success-green-600' : 'text-red-500'
-                  )}
-                >
-                  {trend.positive ? '+' : ''}
-                  {trend.value}%
-                </span>
-                <span className="text-xs text-gray-500">{trend.label}</span>
-              </div>
-            )}
-
-            {note && <p className="text-xs text-gray-500 mt-2">{note}</p>}
-
-            {status && status === 'unverified' && link && (
-              <Link
-                href={link}
-                className="inline-flex items-center gap-1 text-xs text-trust-blue-600 hover:text-trust-blue-700 font-medium mt-2 group"
-              >
-                Complete verification
-                <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-            )}
-          </div>
-
-          <div
-            className={cn(
-              'p-3 rounded-xl border',
-              styles.bg,
-              styles.border
-            )}
-          >
-            <Icon className={cn('h-6 w-6', styles.icon)} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
+interface Hold {
+  id: string
+  check_in: string
+  check_out: string
+  guest_name?: string
+  guest_phone?: string
+  num_guests: number
+  whatsapp_msg?: string
+  expires_at: string
+  status: string
 }
 
-// Skeleton Stats Card
-function StatsCardSkeleton() {
-  return (
-    <Card className="border-0 shadow-lg shadow-gray-200/50">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <Skeleton className="h-4 w-24 mb-2" />
-            <Skeleton className="h-10 w-16" />
-            <Skeleton className="h-4 w-32 mt-2" />
-          </div>
-          <Skeleton className="h-12 w-12 rounded-xl" />
-        </div>
-      </CardContent>
-    </Card>
-  )
+interface Property {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  location?: string
+  whatsapp: string
+  price_per_night: number
 }
 
-// Booking Status Badge
-function BookingStatusBadge({ status }: { status: string }) {
-  const config: Record<
-    string,
-    { variant: 'default' | 'success' | 'warning' | 'destructive'; label: string }
-  > = {
-    pending: { variant: 'warning', label: 'Pending' },
-    confirmed: { variant: 'success', label: 'Accepted' },
-    on_hold: { variant: 'default', label: 'On Hold' },
-    declined: { variant: 'destructive', label: 'Rejected' },
-    cancelled: { variant: 'destructive', label: 'Cancelled' },
-  }
-
-  const { variant, label } = config[status] || { variant: 'default', label: status }
-
-  return <Badge variant={variant}>{label}</Badge>
-}
-
-// Recent Bookings Table
-interface RecentBookingsProps {
-  bookings: Booking[]
-  rooms: Record<string, { name: string }>
-  onAccept: (id: string) => void
-  onReject: (id: string) => void
-  isLoading: boolean
-}
-
-function RecentBookings({
-  bookings,
-  rooms,
-  onAccept,
-  onReject,
-  isLoading,
-}: RecentBookingsProps) {
-  const { ref, isVisible } = useScrollAnimation<HTMLDivElement>()
-
-  if (isLoading) {
-    return (
-      <Card className="border-0 shadow-lg shadow-gray-200/50">
-        <CardHeader>
-          <Skeleton className="h-6 w-48" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-16 w-full" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (bookings.length === 0) {
-    return (
-      <Card
-        ref={ref}
-        className={cn(
-          'border-0 shadow-lg shadow-gray-200/50 transition-all duration-700',
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        )}
-      >
-        <CardHeader>
-          <CardTitle>Recent Booking Requests</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-trust-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <CalendarX className="h-8 w-8 text-trust-blue-400" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
-              No booking requests yet
-            </h3>
-            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-              Share your booking page link to start receiving inquiries from
-              guests.
-            </p>
-            <Button asChild>
-              <Link href="/dashboard/settings">Get Your Link</Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <Card
-      ref={ref}
-      className={cn(
-        'border-0 shadow-lg shadow-gray-200/50 transition-all duration-700',
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-      )}
-    >
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <div>
-          <CardTitle>Recent Booking Requests</CardTitle>
-          <CardDescription>Last 5 booking requests</CardDescription>
-        </div>
-        <Button variant="ghost" size="sm" asChild className="gap-1">
-          <Link href="/dashboard/bookings">
-            View All
-            <ArrowUpRight className="h-4 w-4" />
-          </Link>
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Guest
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Dates
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Room
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {bookings.map((booking, index) => (
-                <tr
-                  key={booking.id}
-                  className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors group"
-                  style={{ animationDelay: `${index * 75}ms` }}
-                >
-                  <td className="py-4 px-4">
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {booking.guest_name}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {booking.num_guests} guests
-                      </p>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="text-sm text-gray-700">
-                      {formatDateRange(booking.check_in, booking.check_out)}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="text-sm text-gray-700">
-                      {booking.room_id
-                        ? rooms[booking.room_id]?.name || 'Unknown'
-                        : 'Any Room'}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <BookingStatusBadge status={booking.status} />
-                  </td>
-                  <td className="py-4 px-4 text-right">
-                    {booking.status === 'pending' ? (
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-success-green-600 border-success-green-200 hover:bg-success-green-50 hover:border-success-green-300"
-                          onClick={() => onAccept(booking.id)}
-                        >
-                          <Check className="h-4 w-4 mr-1" />
-                          Accept
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
-                          onClick={() => onReject(booking.id)}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Reject
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link
-                          href={`/dashboard/bookings?id=${booking.id}`}
-                          className="gap-1"
-                        >
-                          View
-                          <ArrowUpRight className="h-3 w-3" />
-                        </Link>
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile Cards */}
-        <div className="md:hidden space-y-3">
-          {bookings.map((booking) => (
-            <div
-              key={booking.id}
-              className="border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50/50"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {booking.guest_name}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {booking.num_guests} guests
-                  </p>
-                </div>
-                <BookingStatusBadge status={booking.status} />
-              </div>
-
-              <div className="text-sm text-gray-600">
-                {formatDateRange(booking.check_in, booking.check_out)}
-              </div>
-
-              <div className="text-sm text-gray-500">
-                {booking.room_id
-                  ? rooms[booking.room_id]?.name || 'Unknown'
-                  : 'Any Room'}
-              </div>
-
-              {booking.status === 'pending' && (
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 text-success-green-600 border-success-green-200 hover:bg-success-green-50"
-                    onClick={() => onAccept(booking.id)}
-                  >
-                    <Check className="h-4 w-4 mr-1" />
-                    Accept
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
-                    onClick={() => onReject(booking.id)}
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Reject
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-// Hibernation Warning Banner
-function HibernationBanner({
-  daysUntilHibernation,
-}: {
-  daysUntilHibernation: number
-}) {
-  return (
-    <div className="bg-gradient-to-r from-warning-amber-50 to-warning-amber-100/50 border border-warning-amber-200 rounded-2xl p-4 mb-6">
-      <div className="flex items-start gap-3">
-        <div className="p-2 rounded-xl bg-warning-amber-100">
-          <Moon className="h-5 w-5 text-warning-amber-600" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-bold text-warning-amber-800">
-            Your page will hibernate in {daysUntilHibernation} days
-          </p>
-          <p className="text-sm text-warning-amber-700 mt-1">
-            Log in regularly to keep your page active and visible to guests.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-warning-amber-300 text-warning-amber-700 hover:bg-warning-amber-200 shrink-0"
-        >
-          Keep Active
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-// Quick Actions
-function QuickActions({ propertySlug }: { propertySlug: string }) {
-  const { addToast } = useToast()
-  const [copied, setCopied] = useState(false)
-
-  const handleShare = async () => {
-    const url = `${window.location.origin}/${propertySlug}`
-    try {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      addToast({
-        title: 'Link copied!',
-        description: 'Your booking page URL has been copied to clipboard.',
-        variant: 'success',
-      })
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      addToast({
-        title: 'Failed to copy',
-        description: 'Please try again.',
-        variant: 'destructive',
-      })
-    }
-  }
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <Button asChild className="w-full gap-2 shadow-sm">
-        <Link href="/dashboard/rooms">
-          <Plus className="h-4 w-4" />
-          Add Room
-        </Link>
-      </Button>
-
-      <Button variant="outline" asChild className="w-full gap-2 border-2">
-        <Link href="/dashboard/blocked">
-          <Ban className="h-4 w-4" />
-          Block Dates
-        </Link>
-      </Button>
-
-      <Button
-        variant="outline"
-        className="w-full gap-2 border-2"
-        onClick={handleShare}
-      >
-        {copied ? (
-          <>
-            <CheckCircle2 className="h-4 w-4 text-success-green-600" />
-            Copied!
-          </>
-        ) : (
-          <>
-            <Share2 className="h-4 w-4" />
-            Share Link
-          </>
-        )}
-      </Button>
-    </div>
-  )
-}
-
-// No Rooms Empty State
-function NoRoomsState() {
-  const { ref, isVisible } = useScrollAnimation<HTMLDivElement>()
-
-  return (
-    <Card
-      ref={ref}
-      className={cn(
-        'border-2 border-dashed border-gray-200 shadow-none transition-all duration-700',
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-      )}
-    >
-      <CardContent className="p-8 text-center">
-        <div className="w-16 h-16 bg-trust-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Bed className="h-8 w-8 text-trust-blue-400" />
-        </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-2">
-          Add your first room
-        </h3>
-        <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-          You need at least one room to start taking bookings. Set up your rooms
-          now.
-        </p>
-        <Button asChild>
-          <Link href="/dashboard/rooms" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Room
-          </Link>
-        </Button>
-      </CardContent>
-    </Card>
-  )
-}
-
-// Main Dashboard Page
 export default function DashboardPage() {
   const router = useRouter()
   const { user, isLoading: authLoading } = useAuth()
-  const { addToast } = useToast()
   const supabase = createClient()
-  const { ref: statsRef, isVisible: statsVisible } =
-    useScrollAnimation<HTMLDivElement>()
 
   const [property, setProperty] = useState<Property | null>(null)
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [rooms, setRooms] = useState<Record<string, { name: string }>>({})
-  const [isLoading, setIsLoading] = useState(true)
-  const [notificationCount, setNotificationCount] = useState(0)
+  const [images, setImages] = useState<PropertyImage[]>([])
+  const [availability, setAvailability] = useState<Availability[]>([])
+  const [holds, setHolds] = useState<Hold[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [uploadingImages, setUploadingImages] = useState(false)
+  const [showSetup, setShowSetup] = useState(false)
+  const [activeTab, setActiveTab] = useState<'calendar' | 'photos' | 'settings'>('calendar')
+  const [holdTimers, setHoldTimers] = useState<Record<string, string>>({})
 
-  // Check if user needs to be redirected (hibernation warning)
-  const [showHibernationWarning, setShowHibernationWarning] = useState(false)
-  const [daysUntilHibernation, setDaysUntilHibernation] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch dashboard data
+  // Form state for settings
+  const [formData, setFormData] = useState({
+    name: '',
+    whatsapp: '',
+    price: '',
+    location: '',
+    description: '',
+    slug: '',
+  })
+
   useEffect(() => {
-    if (authLoading) return
-
-    if (!user) {
+    if (!authLoading && !user) {
       router.push('/login')
+    } else if (user) {
+      fetchProperty()
+      fetchAvailability()
+      fetchHolds()
+    }
+  }, [user, authLoading])
+
+  // Update hold timers every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newTimers: Record<string, string> = {}
+      holds.forEach(hold => {
+        if (hold.status === 'active') {
+          const expiresAt = new Date(hold.expires_at).getTime()
+          const now = Date.now()
+          const diff = expiresAt - now
+
+          if (diff <= 0) {
+            newTimers[hold.id] = 'Expired'
+            // Refresh holds to remove expired
+            fetchHolds()
+          } else {
+            const minutes = Math.floor(diff / 60000)
+            const seconds = Math.floor((diff % 60000) / 1000)
+            newTimers[hold.id] = `${minutes}:${seconds.toString().padStart(2, '0')}`
+          }
+        }
+      })
+      setHoldTimers(newTimers)
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [holds])
+
+  const fetchProperty = async () => {
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('owner_id', user!.id)
+      .single()
+
+    if (error || !data) {
+      setShowSetup(true)
+      setLoading(false)
       return
     }
 
-    const fetchDashboardData = async () => {
-      try {
-        setIsLoading(true)
+    setProperty(data)
+    setFormData({
+      name: data.name || '',
+      whatsapp: data.whatsapp || '',
+      price: data.price_per_night?.toString() || '',
+      location: data.location || '',
+      description: data.description || '',
+      slug: data.slug || '',
+    })
 
-        // Get property for this user
-        const { data: propertyData, error: propertyError } = await supabase
-          .from('properties')
-          .select('*')
-          .eq('owner_id', user.id)
-          .single()
+    // Fetch images
+    const { data: imagesData } = await supabase
+      .from('property_images')
+      .select('*')
+      .eq('property_id', data.id)
+      .order('sort_order')
 
-        if (propertyError || !propertyData) {
-          console.error('Error fetching property:', propertyError)
-          setProperty(null)
-          setIsLoading(false)
-          return
-        }
+    if (imagesData) {
+      setImages(imagesData)
+    }
 
-        setProperty(propertyData)
+    setShowSetup(false)
+    setLoading(false)
+  }
 
-        // Check for hibernation warning (mock logic - would check last login)
-        const lastActivity = user?.last_sign_in_at ? new Date(user.last_sign_in_at) : null
-        const daysSinceActivity = lastActivity
-          ? Math.floor((Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24))
-          : 0
-        if (daysSinceActivity > 7 && !propertyData.is_hibernating) {
-          setShowHibernationWarning(true)
-          setDaysUntilHibernation(Math.max(1, 14 - daysSinceActivity))
-        }
+  const fetchAvailability = async () => {
+    if (!property) return
 
-        // Fetch stats
-        const { data: statsData } = await supabase
-          .rpc('get_property_stats', { p_property_id: propertyData.id })
-          .single()
+    const today = new Date()
+    const endDate = new Date(today)
+    endDate.setDate(endDate.getDate() + 90)
 
-        if (statsData) {
-          setStats(statsData as DashboardStats)
-        } else {
-          // Fallback: calculate stats manually
-          const { count: totalBookings } = await supabase
-            .from('bookings')
-            .select('*', { count: 'exact' })
-            .eq('property_id', propertyData.id)
+    const { data } = await supabase
+      .from('availability')
+      .select('date, status')
+      .eq('property_id', property.id)
+      .gte('date', today.toISOString().split('T')[0])
+      .lte('date', endDate.toISOString().split('T')[0])
 
-          const { count: bookingsThisMonth } = await supabase
-            .from('bookings')
-            .select('*', { count: 'exact' })
-            .eq('property_id', propertyData.id)
-            .gte(
-              'created_at',
-              new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-            )
+    if (data) {
+      setAvailability(data)
+    }
+  }
 
-          const { count: activeHolds } = await supabase
-            .from('bookings')
-            .select('*', { count: 'exact' })
-            .eq('property_id', propertyData.id)
-            .eq('status', 'on_hold')
-            .gt('hold_expires_at', new Date().toISOString())
+  const fetchHolds = async () => {
+    if (!property) return
 
-          const { count: pendingBookings } = await supabase
-            .from('bookings')
-            .select('*', { count: 'exact' })
-            .eq('property_id', propertyData.id)
-            .eq('status', 'pending')
+    const { data } = await supabase
+      .from('holds')
+      .select('*')
+      .eq('property_id', property.id)
+      .eq('status', 'active')
+      .order('expires_at')
 
-          setNotificationCount(pendingBookings || 0)
+    if (data) {
+      setHolds(data)
+    }
+  }
 
-          setStats({
-            total_bookings: totalBookings || 0,
-            bookings_this_month: bookingsThisMonth || 0,
-            active_holds: activeHolds || 0,
-            page_views: 0,
-            page_views_change: 12,
-            verification_status: propertyData.verification_status,
-          })
-        }
+  const handleCreateProperty = async () => {
+    if (!formData.name || !formData.whatsapp || !formData.price) {
+      alert('Please fill in all required fields')
+      return
+    }
 
-        // Fetch recent bookings
-        const { data: bookingsData } = await supabase
-          .from('bookings')
-          .select('*')
-          .eq('property_id', propertyData.id)
-          .order('created_at', { ascending: false })
-          .limit(5)
+    setSaving(true)
 
-        setBookings(bookingsData || [])
+    // Generate slug from name
+    const slug = formData.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
 
-        // Fetch rooms for reference
-        const { data: roomsData } = await supabase
-          .from('rooms')
-          .select('id, name')
-          .eq('property_id', propertyData.id)
+    const { data, error } = await supabase
+      .from('properties')
+      .insert({
+        owner_id: user!.id,
+        name: formData.name,
+        slug,
+        whatsapp: formData.whatsapp,
+        price_per_night: Number(formData.price),
+        location: formData.location,
+        description: formData.description,
+      })
+      .select()
+      .single()
 
-        const roomsMap: Record<string, { name: string }> = {}
-        roomsData?.forEach((room) => {
-          roomsMap[room.id] = { name: room.name }
+    if (error) {
+      alert('Error creating property: ' + error.message)
+      setSaving(false)
+      return
+    }
+
+    setProperty(data)
+    setFormData(prev => ({ ...prev, slug }))
+    setShowSetup(false)
+    setSaving(false)
+  }
+
+  const handleUpdateSettings = async () => {
+    if (!property) return
+    setSaving(true)
+
+    const { error } = await supabase
+      .from('properties')
+      .update({
+        name: formData.name,
+        whatsapp: formData.whatsapp,
+        price_per_night: Number(formData.price),
+        location: formData.location,
+        description: formData.description,
+      })
+      .eq('id', property.id)
+
+    if (error) {
+      alert('Error updating property: ' + error.message)
+    }
+
+    setSaving(false)
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || !property) return
+
+    setUploadingImages(true)
+
+    for (const file of Array.from(files)) {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${property.id}/${Date.now()}-${Math.random()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('property-images')
+        .upload(fileName, file)
+
+      if (uploadError) {
+        alert('Upload error: ' + uploadError.message)
+        continue
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('property-images')
+        .getPublicUrl(fileName)
+
+      // Add to database
+      const { data: imageData, error: dbError } = await supabase
+        .from('property_images')
+        .insert({
+          property_id: property.id,
+          url: urlData.publicUrl,
+          sort_order: images.length,
+          is_cover: images.length === 0,
         })
-        setRooms(roomsMap)
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-        addToast({
-          title: 'Error loading dashboard',
-          description: 'Please try refreshing the page.',
-          variant: 'destructive',
-        })
-      } finally {
-        setIsLoading(false)
+        .select()
+        .single()
+
+      if (!dbError && imageData) {
+        setImages(prev => [...prev, imageData])
       }
     }
 
-    fetchDashboardData()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading])
+    setUploadingImages(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
-  // Handle booking actions
-  const handleAcceptBooking = async (bookingId: string) => {
-    try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({
-          status: 'confirmed',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', bookingId)
+  const handleDeleteImage = async (imageId: string) => {
+    const { error } = await supabase
+      .from('property_images')
+      .delete()
+      .eq('id', imageId)
 
-      if (error) throw error
+    if (!error) {
+      setImages(prev => prev.filter(img => img.id !== imageId))
+    }
+  }
 
-      setBookings((prev) =>
-        prev.map((b) =>
-          b.id === bookingId ? { ...b, status: 'confirmed' } : b
-        )
-      )
+  const handleToggleDate = async (date: string) => {
+    if (!property) return
 
-      addToast({
-        title: 'Booking accepted!',
-        description: 'The guest will be notified.',
-        variant: 'success',
+    const currentStatus = availability.find(a => a.date === date)?.status || 'available'
+    let newStatus: 'available' | 'on_hold' | 'booked'
+
+    if (currentStatus === 'available') {
+      newStatus = 'booked'
+    } else {
+      newStatus = 'available'
+    }
+
+    // Upsert availability
+    const { error } = await supabase
+      .from('availability')
+      .upsert({
+        property_id: property.id,
+        date,
+        status: newStatus,
       })
-    } catch (error) {
-      console.error('Error accepting booking:', error)
-      addToast({
-        title: 'Failed to accept booking',
-        description: 'Please try again.',
-        variant: 'destructive',
+
+    if (!error) {
+      setAvailability(prev => {
+        const exists = prev.find(a => a.date === date)
+        if (exists) {
+          return prev.map(a => a.date === date ? { ...a, status: newStatus } : a)
+        }
+        return [...prev, { date, status: newStatus }]
       })
     }
   }
 
-  const handleRejectBooking = async (bookingId: string) => {
-    try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({
-          status: 'declined',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', bookingId)
+  const handleReleaseHold = async (holdId: string) => {
+    // Update hold status
+    await supabase
+      .from('holds')
+      .update({ status: 'cancelled' })
+      .eq('id', holdId)
 
-      if (error) throw error
+    // Update availability
+    const hold = holds.find(h => h.id === holdId)
+    if (hold) {
+      const dates = []
+      const checkIn = new Date(hold.check_in)
+      const checkOut = new Date(hold.check_out)
 
-      setBookings((prev) =>
-        prev.map((b) =>
-          b.id === bookingId ? { ...b, status: 'declined' } : b
-        )
-      )
+      for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+        dates.push(d.toISOString().split('T')[0])
+      }
 
-      addToast({
-        title: 'Booking declined',
-        description: 'The guest will be notified.',
-        variant: 'default',
-      })
-    } catch (error) {
-      console.error('Error rejecting booking:', error)
-      addToast({
-        title: 'Failed to decline booking',
-        description: 'Please try again.',
-        variant: 'destructive',
-      })
+      for (const date of dates) {
+        await supabase
+          .from('availability')
+          .update({ status: 'available', hold_id: null })
+          .eq('property_id', property!.id)
+          .eq('date', date)
+      }
     }
+
+    fetchHolds()
+    fetchAvailability()
   }
 
-  if (authLoading) {
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    alert('Copied to clipboard!')
+  }
+
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Spinner size="lg" className="text-trust-blue-600" />
+        <div className="animate-pulse text-gray-600">Loading...</div>
       </div>
     )
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-brand-light flex flex-col items-center justify-center p-4 text-center">
-        <div className="bg-white p-10 rounded-3xl shadow-xl shadow-gray-200/50 max-w-md w-full border border-gray-100">
-          <div className="w-20 h-20 bg-trust-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <ShieldCheck className="h-10 w-10 text-trust-blue-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">Access Required</h1>
-          <p className="text-gray-600 mb-8 leading-relaxed">
-            Please sign in to your account to access your property dashboard.
-          </p>
-          <div className="space-y-3">
-            <Button asChild className="w-full h-12 text-lg font-semibold rounded-xl" variant="gradient">
-              <Link href="/login">Sign In</Link>
-            </Button>
-            <Button asChild variant="ghost" className="w-full">
-              <Link href="/">Back to Home</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
+  if (showSetup) {
+    return <SetupWizard formData={formData} setFormData={setFormData} onSubmit={handleCreateProperty} saving={saving} />
   }
-
-  const hasRooms = Object.keys(rooms).length > 0
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <DashboardSidebar
-        propertyName={property?.name}
-        verificationStatus={property?.verification_status}
-        pendingBookingsCount={notificationCount}
-      />
-
-      {/* Main Content */}
-      <main className="lg:ml-[260px] min-h-screen">
-        <div className="p-4 sm:p-6 lg:p-8">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                Dashboard
-              </h1>
-              <p className="text-gray-500 mt-1">
-                Welcome back! Here&apos;s what&apos;s happening with your property.
-              </p>
-            </div>
-
-            <button
-              onClick={() => router.push('/dashboard/bookings')}
-              aria-label={`${notificationCount} pending booking${notificationCount !== 1 ? 's' : ''}`}
-              className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Bell className="h-5 w-5" />
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                  {notificationCount > 9 ? '9+' : notificationCount}
-                </span>
-              )}
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-lg mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl font-bold text-gray-900">{property?.name}</h1>
+            <button onClick={() => supabase.auth.signOut()} className="p-2 text-gray-500 hover:text-gray-700">
+              <LogOut className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Hibernation Warning */}
-          {showHibernationWarning && (
-            <HibernationBanner daysUntilHibernation={daysUntilHibernation} />
-          )}
+          {/* Tab Navigation */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('calendar')}
+              className={`flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-colors ${
+                activeTab === 'calendar'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Calendar className="h-4 w-4 inline mr-1" />
+              Calendar
+            </button>
+            <button
+              onClick={() => setActiveTab('photos')}
+              className={`flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-colors ${
+                activeTab === 'photos'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Camera className="h-4 w-4 inline mr-1" />
+              Photos
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-colors ${
+                activeTab === 'settings'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              ⚙️ Settings
+            </button>
+          </div>
+        </div>
+      </div>
 
-          {/* No Rooms State */}
-          {!hasRooms && !isLoading && (
-            <div className="mb-8">
-              <NoRoomsState />
+      {/* Content */}
+      <div className="max-w-lg mx-auto px-4 py-6">
+        {/* Active Holds */}
+        {holds.length > 0 && activeTab === 'calendar' && (
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Active Holds</h2>
+            <div className="space-y-3">
+              {holds.map(hold => (
+                <div key={hold.id} className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-orange-600" />
+                      <span className="font-bold text-orange-600">{holdTimers[hold.id] || 'Loading...'}</span>
+                    </div>
+                    <button
+                      onClick={() => handleReleaseHold(hold.id)}
+                      className="text-sm text-red-600 hover:text-red-700"
+                    >
+                      Release
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    {hold.check_in} to {hold.check_out}
+                    {hold.num_guests > 1 && ` • ${hold.num_guests} guests`}
+                  </p>
+                  {hold.guest_name && (
+                    <p className="text-sm text-gray-600">{hold.guest_name}</p>
+                  )}
+                </div>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Stats Cards */}
-          <div
-            ref={statsRef}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-          >
-            {isLoading ? (
-              <>
-                <StatsCardSkeleton />
-                <StatsCardSkeleton />
-                <StatsCardSkeleton />
-                <StatsCardSkeleton />
-              </>
+        {/* Calendar Tab */}
+        {activeTab === 'calendar' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Availability</h2>
+              <div className="flex items-center gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-500 rounded"></div>
+                  <span>Available</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                  <span>Hold</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-red-500 rounded"></div>
+                  <span>Booked</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <CalendarManager
+                availability={availability}
+                onToggleDate={handleToggleDate}
+              />
+            </div>
+
+            <p className="text-xs text-gray-500 mt-3 text-center">
+              Tap a date to mark as booked. Tap again to make available.
+            </p>
+          </div>
+        )}
+
+        {/* Photos Tab */}
+        {activeTab === 'photos' && (
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Property Photos</h2>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+
+            {images.length === 0 ? (
+              <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+                <Camera className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-600 mb-4">Upload vertical photos for best results</p>
+                <Button onClick={() => fileInputRef.current?.click()} disabled={uploadingImages}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  {uploadingImages ? 'Uploading...' : 'Upload Photos'}
+                </Button>
+              </div>
             ) : (
               <>
-                <StatsCard
-                  title="Total Bookings"
-                  value={stats?.total_bookings || 0}
-                  icon={CalendarCheck}
-                  trend={{ value: 12, label: 'from last month', positive: true }}
-                  delay={0}
-                  isVisible={statsVisible}
-                  color="blue"
-                />
+                <div className="grid grid-cols-2 gap-3">
+                  {images.map((image, index) => (
+                    <div key={image.id} className="relative aspect-[9/16] bg-gray-100 rounded-xl overflow-hidden group">
+                      <img src={image.url} alt="" className="w-full h-full object-cover" />
+                      {index === 0 && (
+                        <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                          Cover
+                        </div>
+                      )}
+                      <button
+                        onClick={() => handleDeleteImage(image.id)}
+                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
 
-                <StatsCard
-                  title="Active Holds"
-                  value={stats?.active_holds || 0}
-                  icon={Clock}
-                  note="Expires in 24 hours"
-                  delay={100}
-                  isVisible={statsVisible}
-                  color="amber"
-                />
-
-                <StatsCard
-                  title="Page Views"
-                  value={stats?.page_views || 0}
-                  icon={Eye}
-                  trend={{
-                    value: stats?.page_views_change || 0,
-                    label: 'this month',
-                    positive: true,
-                  }}
-                  delay={200}
-                  isVisible={statsVisible}
-                  color="purple"
-                />
-
-                <StatsCard
-                  title="Verification Status"
-                  value={0}
-                  icon={ShieldCheck}
-                  status={
-                    stats?.verification_status === 'approved'
-                      ? 'verified'
-                      : stats?.verification_status === 'pending'
-                        ? 'pending'
-                        : 'unverified'
-                  }
-                  link="/dashboard/verification"
-                  delay={300}
-                  isVisible={statsVisible}
-                  color="green"
-                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImages}
+                  className="w-full mt-4"
+                  variant="outline"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {uploadingImages ? 'Uploading...' : 'Add More Photos'}
+                </Button>
               </>
             )}
           </div>
+        )}
 
-          {/* Quick Actions */}
-          <div className="mb-8">
-            <QuickActions propertySlug={property?.slug || ''} />
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
+            <div>
+              <Label>Property Name *</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="My Beautiful Villa"
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label>WhatsApp Number *</Label>
+              <Input
+                value={formData.whatsapp}
+                onChange={(e) => setFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+                placeholder="+91 98765 43210"
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label>Price per Night (₹) *</Label>
+              <Input
+                type="number"
+                value={formData.price}
+                onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                placeholder="8500"
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label>Location</Label>
+              <Input
+                value={formData.location}
+                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                placeholder="Anjuna, Goa"
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label>Description</Label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Tell guests what makes your property special..."
+                className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                rows={4}
+              />
+            </div>
+
+            <Button onClick={handleUpdateSettings} disabled={saving} className="w-full">
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+
+            {/* Booking Link */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">Your Booking Link</h3>
+              <div className="flex items-center gap-2 mb-3">
+                <code className="flex-1 bg-white px-3 py-2 rounded border text-sm truncate">
+                  {typeof window !== 'undefined' ? window.location.origin : ''}/p/{property?.slug}
+                </code>
+                <button
+                  onClick={() => copyToClipboard(`${typeof window !== 'undefined' ? window.location.origin : ''}/p/${property?.slug}`)}
+                  className="p-2 bg-white border rounded-lg hover:bg-gray-50"
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-600">Share this link in your Instagram bio!</p>
+            </div>
           </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
-          {/* Recent Bookings */}
-          <RecentBookings
-            bookings={bookings}
-            rooms={rooms}
-            onAccept={handleAcceptBooking}
-            onReject={handleRejectBooking}
-            isLoading={isLoading}
-          />
+// Setup Wizard Component
+function SetupWizard({
+  formData,
+  setFormData,
+  onSubmit,
+  saving,
+}: {
+  formData: any
+  setFormData: any
+  onSubmit: () => void
+  saving: boolean
+}) {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Create Your Booking Page</h1>
+          <p className="text-gray-600 mb-6">Set up in 30 seconds</p>
+
+          <div className="space-y-4">
+            <div>
+              <Label>Property Name *</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, name: e.target.value }))}
+                placeholder="Sunset Villa Goa"
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label>WhatsApp Number *</Label>
+              <Input
+                value={formData.whatsapp}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, whatsapp: e.target.value }))}
+                placeholder="+91 98765 43210"
+                className="mt-2"
+              />
+              <p className="text-xs text-gray-500 mt-1">Guests will message you here</p>
+            </div>
+
+            <div>
+              <Label>Price per Night (₹) *</Label>
+              <Input
+                type="number"
+                value={formData.price}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, price: e.target.value }))}
+                placeholder="8500"
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label>Location</Label>
+              <Input
+                value={formData.location}
+                onChange={(e) => setFormData((prev: any) => ({ ...prev, location: e.target.value }))}
+                placeholder="Anjuna, Goa"
+                className="mt-2"
+              />
+            </div>
+
+            <Button onClick={onSubmit} disabled={saving} className="w-full mt-6" size="lg">
+              {saving ? 'Creating...' : 'Create My Page'}
+            </Button>
+
+            <p className="text-xs text-gray-500 text-center">
+              You can add photos after creating your page
+            </p>
+          </div>
         </div>
-      </main>
+      </div>
+    </div>
+  )
+}
+
+// Calendar Manager Component
+function CalendarManager({
+  availability,
+  onToggleDate,
+}: {
+  availability: Availability[]
+  onToggleDate: (date: string) => void
+}) {
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+
+  const getDateStatus = (date: Date): 'available' | 'on_hold' | 'booked' => {
+    const dateStr = date.toISOString().split('T')[0]
+    const avail = availability.find(a => a.date === dateStr)
+    return avail?.status || 'available'
+  }
+
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  }
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+  }
+
+  const month = currentMonth
+  const daysInMonth = getDaysInMonth(month)
+  const firstDay = getFirstDayOfMonth(month)
+
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  return (
+    <div>
+      {/* Month Navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => setCurrentMonth(new Date(month.getFullYear(), month.getMonth() - 1))}
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <h3 className="font-semibold">
+          {month.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+        </h3>
+        <button
+          onClick={() => setCurrentMonth(new Date(month.getFullYear(), month.getMonth() + 1))}
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Week Days */}
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {weekDays.map(day => (
+          <div key={day} className="text-center text-xs text-gray-500 font-medium py-2">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Days */}
+      <div className="grid grid-cols-7 gap-1">
+        {Array.from({ length: firstDay }).map((_, i) => (
+          <div key={`empty-${i}`} className="aspect-square" />
+        ))}
+
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1
+          const date = new Date(month.getFullYear(), month.getMonth(), day)
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+
+          const isPast = date < today
+          const status = getDateStatus(date)
+
+          return (
+            <button
+              key={day}
+              onClick={() => {
+                if (!isPast) {
+                  onToggleDate(date.toISOString().split('T')[0])
+                }
+              }}
+              disabled={isPast}
+              className={`
+                aspect-square rounded-lg text-sm font-medium transition-all
+                ${isPast ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer'}
+                ${status === 'available' ? 'bg-green-500 text-white hover:bg-green-600' : ''}
+                ${status === 'on_hold' ? 'bg-yellow-500 text-white hover:bg-yellow-600' : ''}
+                ${status === 'booked' ? 'bg-red-500 text-white hover:bg-red-600' : ''}
+              `}
+            >
+              {day}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

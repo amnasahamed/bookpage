@@ -236,14 +236,20 @@ export default function PropertyPage() {
           .single()
         
         if (error) {
+          console.error('Supabase error:', error)
           if (error.code === 'PGRST116') {
-            throw new Error('Property not found')
+            setError('Property not found')
+          } else {
+            setError(`Failed to load property: ${error.message}`)
           }
-          throw error
+          setLoading(false)
+          return
         }
         
         if (!data) {
-          throw new Error('Property not found')
+          setError('Property not found')
+          setLoading(false)
+          return
         }
 
         // Transform data to match Property interface
@@ -392,7 +398,7 @@ export default function PropertyPage() {
   if (error || !property) {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center px-4">
+        <div className="text-center px-4 max-w-md">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Home className="h-8 w-8 text-gray-400" />
           </div>
@@ -400,14 +406,29 @@ export default function PropertyPage() {
             Property Not Found
           </h1>
           <p className="text-gray-600 mb-6">
-            This property is not accepting bookings at the moment.
+            {error || "This property doesn't exist or is not accepting bookings at the moment."}
           </p>
-          <Link href="/">
-            <Button>
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </Button>
-          </Link>
+          <div className="bg-gray-100 rounded-lg p-4 mb-6 text-left">
+            <p className="text-sm text-gray-600 mb-2">
+              <strong>Looking for:</strong> {slug}
+            </p>
+            <p className="text-xs text-gray-500">
+              If you're the property owner, please check your dashboard for your page link.
+            </p>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <Link href="/">
+              <Button>
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Back to Home
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="outline">
+                Owner Login
+              </Button>
+            </Link>
+          </div>
         </div>
       </main>
     )
