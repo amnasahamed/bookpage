@@ -144,7 +144,7 @@ export default function DashboardPage() {
     setProperty(data)
     setFormData({
       name: data.name || '',
-      whatsapp: data.whatsapp || '',
+      whatsapp: data.whatsapp_number || '',
       price: data.price_per_night?.toString() || '',
       location: data.location || '',
       description: data.description || '',
@@ -273,7 +273,7 @@ export default function DashboardPage() {
         owner_id: user!.id,
         name: formData.name,
         slug,
-        whatsapp: formData.whatsapp,
+        whatsapp_number: formData.whatsapp,
         price_per_night: Number(formData.price),
         location: formData.location,
         description: formData.description,
@@ -309,7 +309,7 @@ export default function DashboardPage() {
       .from('properties')
       .update({
         name: formData.name,
-        whatsapp: formData.whatsapp,
+        whatsapp_number: formData.whatsapp,
         price_per_night: Number(formData.price),
         location: formData.location,
         description: formData.description,
